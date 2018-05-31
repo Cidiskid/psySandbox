@@ -1,8 +1,7 @@
-from config import all_config
+from util.config import all_config
 import logging
 import time
 import csv
-
 
 def LogInit():
     all_config.load()

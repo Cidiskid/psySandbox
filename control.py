@@ -3,9 +3,9 @@ from env import Env
 from agent import Agent
 from copy import deepcopy
 import acts
-import moniter
+from util import moniter
+from util.config import all_config
 import logging
-from config import all_config
 
 class Control:
     def __init__(self):
@@ -72,7 +72,7 @@ class Control:
             self.agents.append(Agent(arg.init_agent_arg(self.global_arg,
                                                         self.main_env.arg)))
             self.agents[i].state_now = [0 for _ in range(self.main_env.N)]
-        stage_num = self.global_arg['T'] / self.global_arg['Ts']
+        stage_num = self.global_arg['T'] // self.global_arg['Ts']
         for k in range(self.global_arg["Nagent"]):
             csv_head = ['frame', 'SSMfi', 'SSM_f-req', 'proc_action', 'SSM_f_need',
                         'nkmax', 'nkmin', 'nkmid', 'nkavg', 'nk0.75', "nk0.25",
