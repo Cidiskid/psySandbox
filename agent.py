@@ -12,10 +12,10 @@ class Agent:
         self.state_now = None
     def RenewRsInfo(self, state, value, T):
         s = NKmodel.code2int(state)
-        self.frame_arg["SSM"]['rs-set'][s] = {'T':T, 'value':value}
+        self.frame_arg["PSM"]['m-info'][s] = {'T':T, 'value':value}
         rm_s = []
-        for s in self.frame_arg["SSM"]['rs-set']:
-            if(self.frame_arg["SSM"]['rs-set'][s]['T'] < T - self.agent_arg['k']['rmb']):
+        for s in self.frame_arg["PSM"]['m-info']:
+            if(self.frame_arg["PSM"]['m-info'][s]['T'] < T - self.agent_arg['a']['rmb']):
                 rm_s.append(s)
         for s in rm_s:
-            del self.frame_arg["SSM"]['rs-set'][s]
+            del self.frame_arg["PSM"]['m-info'][s]
