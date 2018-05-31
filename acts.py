@@ -40,7 +40,7 @@ def max_choice(items):
     return  max_i
 
 def act_zybkyb(env, agent, T):
-    try_list = sample(range(env.N), agent.frame_arg['ACT']['zybkyb']['n_near'])
+    try_list = sample(range(env.N), agent.frame_arg['ACT']['xdzx']['n_near'])
     states = [agent.state_now]
     for x in try_list:
         states.append(deepcopy(agent.state_now))
