@@ -77,10 +77,43 @@ class State:
     def list2int(code):
         return int(sum([code[i] * (State.P ** int(i)) for i in range(len(code))]))
 
+    @staticmethod
+    def getDist(s1, s2):
+        assert isinstance(s1, State) and isinstance(s2, State)
+
+        def bitDist(a, b, p):
+            return min((a - b + p) % p, (b - a + p) % p)
+
+        return sum([bitDist(s1[i], s2[i], State.P) for i in range(State.N)])
+
 
 class Area:
-    def __init__(self):
-        pass
+    def __init__(self, center, mask, dist):
+        assert isinstance(center, State) and len(mask) == center.N
+        self.center = center
+        self.mask = mask
+        self.dist = dist
+
+    def get_dist(self, state):
+        return State.getDist(state, self.center)
+
+    def getAllPoint(self):
+        all_point = set([int(self.center)])
+        bfs_queue = [(self.center, self.dist)]
+        head = 0
+        while(head < len(bfs_queue)):
+            s, deep = bfs_queue[head]
+            head += 1
+            if(deep <= 0):
+                continue
+            for i in range(len(self.mask)):
+                for dlt in [-1, 1]:
+                    st = s.walk(i, dlt)
+                    i_st = int(st)
+                    if(not i_st in all_point):
+                        all_point.add(i_st)
+                        bfs_queue.append((st, deep-1))
+        return [pair[0] for pair in bfs_queue]
 
 
 class NKmodel:
@@ -173,6 +206,7 @@ class Env:
 
 if (__name__ == "__main__"):
     import numpy as np
+
     pass
 '''
     all_config.load()

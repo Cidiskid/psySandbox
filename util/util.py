@@ -25,6 +25,15 @@ def clip_tanh(low, up, c, fn, *args, **kwargs):
     return (tanh(2 * (fn(*args, **kwargs) - c) / (up - low)) + 1) * (up - low) / 2 + low
 
 
+def softmax(items):
+    if (type(items) is list):
+        sume = sum([exp(key) for key in items])
+        return [exp(key) / sume for key in items]
+    else:
+        sume = sum([exp(items[key]) for key in items])
+        return {key: exp(items[key]) / sume for key in items}
+
+
 def softmaxM1(items):
     if (type(items) is list):
         sume = sum([exp(key) - 1 for key in items])
@@ -35,19 +44,47 @@ def softmaxM1(items):
 
 
 def random_choice(items):
-    sume = sum([items[key] for key in items])
-    rand = uniform(0, 1.0) * sume
-    for key in items:
-        if (rand <= items[key]):
+    if (type(items) == dict):
+        sume = sum([items[key] for key in items])
+        rand = uniform(0, 1.0) * sume
+        for key in items:
+            if (rand <= items[key]):
+                return key
+            rand -= items[key]
+        for key in items:
             return key
-        rand -= items[key]
-    for key in items:
-        return key
+    elif (type(items) == list):
+        assert (len(items) > 0)
+        rand = uniform(0, 1.0) * sum(items)
+        for i in range(len(items)):
+            if (rand <= items[i]):
+                return i
+            rand -= items[i]
+        return len(items) - 1
 
 
 def max_choice(items):
-    max_key = None
-    for key in items:
-        if (max_key is None or items[max_key] < items[key]):
-            max_key = key
-    return max_key
+    assert (len(items) > 0)
+    if (type(items) == dict):
+        max_key = None
+        for key in items:
+            if (max_key is None or items[max_key] < items[key]):
+                max_key = key
+        return max_key
+    elif (type(items) == list):
+        max_i = 0
+        for i in range(len(items)):
+            if (items[max_i] <= items[i]):
+                max_i = i
+        return max_i
+
+
+def listnorm(items):
+    avg = sum(items) / len(items)
+    std = (sum([(x - avg) ** 2 for x in items]) / len(items)) ** 0.5
+    if (std <= 0): std = 1
+    return [(x - avg) / std for x in items]
+
+
+def norm_softmax(items):
+    return softmax(listnorm(items))

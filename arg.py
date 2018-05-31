@@ -22,13 +22,17 @@ def init_env_arg(global_arg):
     arg = {
         'N': 10,
         'K': 0,
-        'T': global_arg['T']  # 模拟总时间
+        'p':10,#每个位点状态by Cid
+        'T': global_arg['T'],  # 模拟总时间
+        'Tp': global_arg['T'] #每个地形持续时间/地形变化耗时 by Cid
     }
 
     # 环境情景模型模块
     arg['ESM'] = {
         "f-req": 0.75,  # 适应要求，及格线
-        "p-cplx": (lambda Tp: 1 - 0.75 ** (1.0 * global_arg['T'] / Tp) / (1 + exp(arg['K'] - 5))),
+        "p-cplx": 1 - 0.75  / (1 + exp(arg['K'] - 5)),
+        #(lambda Tp: 1 - 0.75 ** (1.0 * global_arg['T'] / Tp) / (1 + exp(arg['K'] - 5))),
+        #TODO 修改公式
         "p-ugt": (1 - tanh(0.1 * (global_arg['Ts'] - 32))) * 0.5
     }
     return arg
@@ -72,16 +76,16 @@ def init_stage_arg(global_arg, env_arg, agent_arg, last_arg, T):
 def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMfi):
     arg = {}
     arg['PSM'] = {
-        "f-req": Norm(env_arg['ESM']['f-req'], 0.01 / agent_arg['a']['insight']),
-        "p-cplx": Norm(env_arg['ESM']['p-cplx'](Tp), 0.01 / agent_arg['a']['insight']),
-        "p-ugt": Norm(env_arg['ESM']['p-ugt'], 0.01 / agent_arg['a']['insight']),
-        "m-info": deepcopy(last_arg['PSM']['m-info']),
-        "m-plan": deepcopy(last_arg['PSM']['m-plan']),
-        "s-sc": deepcopy(last_arg['PSM']['s-sc'])
+        "f-req": Norm(env_arg['ESM']['f-req'], 0.01 / agent_arg['a']['insight']), #只是初始值这样获得
+        "p-cplx": Norm(env_arg['ESM']['p-cplx'], 0.01 / agent_arg['a']['insight']),#只是初始值这样获得
+        "p-ugt": Norm(env_arg['ESM']['p-ugt'], 0.01 / agent_arg['a']['insight']),#只是初始值这样获得
+        "m-info": deepcopy(last_arg['PSM']['m-info']),#新版用法不一样
+        "m-plan": deepcopy(last_arg['PSM']['m-plan']),#新版用法不一样
+        "s-sc": deepcopy(last_arg['PSM']['s-sc']) #新版用法不一样
     }
-    PSMfneed_r = 1.0 / (1 + exp(5 * (PSMfi / arg['PSM']['f-req'] - 1)))
-    PSMfneed_a = 0.5
-    arg['PSM']['a-need'] = PSMfneed_a * last_arg['PSM']['a-need'] + (1 - PSMfneed_a) * PSMfneed_r
+    PSManeed_r = 1.0 / (1 + exp(5 * (PSMfi / arg['PSM']['f-req'] - 1)))
+    PSManeed_a = 0.5
+    arg['PSM']['a-need'] = PSManeed_a * last_arg['PSM']['a-need'] + (1 - PSManeed_a) * PSManeed_r
 
     f1 = 1 + 0.5 * tanh(5 * (arg['PSM']['a-need'] - 0.75)) \
          + 0.5 * tanh(5 * (agent_arg['a']['act'] - 0.5))
@@ -89,9 +93,9 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     h1 = 1 + 0.1 * cos(pi * (arg['PSM']['p-ugt'] - 0.5))
     arg['PROC'] = {
         'a-m': f1 * g1 * h1,  # 行动动机，代表行动意愿的强度
-        'a-th': 0  # 行动阈值，初始0.6
+        'a-th': 0  # 行动阈值，初始0.6，测试版保证行动
     }
-    arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0)
+    arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0),
 
     arg['ACT'] = {
         'p': {},
