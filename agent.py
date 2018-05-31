@@ -1,7 +1,7 @@
 import logging
 from copy import deepcopy
 import arg
-from env import NKmodel, State
+from env import NKmodel, State, Area
 
 default_attrs = {}
 
@@ -12,6 +12,9 @@ class Agent:
         self.stage_arg = arg['default']['stage']
         self.frame_arg = arg['default']['frame']
         self.state_now = None
+        self.inter_area = Area(State(0),
+                               [True for i in range(State.N)],
+                               State.P * State.N)
 
     def RenewRsInfo(self, state, value, T):
         self.frame_arg["PSM"]['m-info'][int(state)] = {'T': T, 'value': value}

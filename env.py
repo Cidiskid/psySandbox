@@ -82,9 +82,21 @@ class State:
         assert isinstance(s1, State) and isinstance(s2, State)
 
         def bitDist(a, b, p):
-            return min((a - b + p) % p, (b - a + p) % p)
+            return a - b if ((a - b)) else b - a
 
         return sum([bitDist(s1[i], s2[i], State.P) for i in range(State.N)])
+
+    @staticmethod
+    def getDiffFrom(s1, s2):
+        assert isinstance(s1, State) and isinstance(s2, State)
+
+        def bitDiffFrom(a, b, p):
+            if (a < b):
+                return b - a if (abs(b - a) <= abs(b - (a + p))) else b - (a + p)
+            else:
+                return b - a if (abs(b - a) <= abs((b + p) - a)) else (b + p) - a
+
+        return sum([bitDiffFrom(s1[i], s2[i], State.P) for i in range(State.N)])
 
 
 class Area:
@@ -98,22 +110,51 @@ class Area:
         return State.getDist(state, self.center)
 
     def getAllPoint(self):
-        all_point = set([int(self.center)])
+        all_point = {int(self.center)}
         bfs_queue = [(self.center, self.dist)]
         head = 0
-        while(head < len(bfs_queue)):
+        while (head < len(bfs_queue)):
             s, deep = bfs_queue[head]
             head += 1
-            if(deep <= 0):
+            if (deep <= 0):
                 continue
             for i in range(len(self.mask)):
                 for dlt in [-1, 1]:
                     st = s.walk(i, dlt)
                     i_st = int(st)
-                    if(not i_st in all_point):
+                    if (not i_st in all_point):
                         all_point.add(i_st)
-                        bfs_queue.append((st, deep-1))
+                        bfs_queue.append((st, deep - 1))
         return [pair[0] for pair in bfs_queue]
+
+    def state_in(self, state):
+        assert isinstance(state, State) and state.N == self.center.N
+        diff = State.getDiffFrom(state, self.center)
+        if (sum([abs(x) for x in diff]) > self.dist):
+            return False
+        for i in range(state.N):
+            if (int(self.mask[i]) == 0 and diff[i] != 0):
+                return False
+        return True
+
+    def sample_near(self, state, sample_num, dfs_r=0):
+        assert isinstance(state, State)
+        assert self.state_in(state)
+        retry_num = sample_num
+        try_queue = [state]
+        head = 0
+        able_walk = [i for i in range(self.N) if (int(self.mask[i]) == 1)]
+        while (retry_num > 0 and len(try_queue) < sample_num + 1):
+            st = try_queue[head].walk(random.sample(able_walk, 1),
+                                      random.sample([-1, 1], 1))
+            if ((not st in try_queue) and self.state_in(st)):
+                try_queue.append(st)
+                if (random.uniform(0, 1) <= dfs_r and head < len(try_queue) - 1):
+                    head += 1
+                retry_num = sample_num
+            else:
+                retry_num -= 1
+        return try_queue
 
 
 class NKmodel:

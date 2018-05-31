@@ -22,6 +22,8 @@ def act_zybkyb(env, agent, T):
                       T)
     return agent
 
+def act_xdzx(env, agent, T):
+    pass
 
 def act_tscs(env, agent, T):
     pass

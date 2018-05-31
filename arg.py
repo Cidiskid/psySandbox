@@ -6,7 +6,7 @@ from math import exp, pow, tanh, cos, pi
 from copy import deepcopy
 import logging
 from util.util import max_choice, random_choice, softmaxM1, clip, clip_rsmp, clip_tanh
-
+from env import Area
 
 def init_global_arg():
     arg = {
@@ -24,7 +24,7 @@ def init_env_arg(global_arg):
         'K': 0,
         'p':10,#每个位点状态by Cid
         'T': global_arg['T'],  # 模拟总时间
-        'Tp': global_arg['T'] #每个地形持续时间/地形变化耗时 by Cid
+        'Tp': global_arg['T']  #每个地形持续时间/地形变化耗时 by Cid
     }
 
     # 环境情景模型模块
@@ -41,7 +41,7 @@ def init_env_arg(global_arg):
 def init_agent_arg(global_arg, env_arg):
     arg = {}
     arg['a'] = {
-        "insight": clip(Norm(0.5, 0.2), 0.001, 0.999),  # 环境感知能力
+        "insight": clip_rsmp(0.001, 0.999, Norm, mu=0.5, sigma=0.2),  # 环境感知能力
         "act": Norm(0.5, 0.1),  # 行动意愿
         "xplr": Norm(0.5, 0.3),  # 探索倾向
         "xplt": Norm(0.5, 0.3),  # 利用倾向
