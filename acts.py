@@ -25,12 +25,15 @@ def act_zybkyb(env, agent, T, Tfi):
 def act_xdzx(env, agent, T, Tfi):
     state_next = agent.inter_area.rand_walk(agent.state_now)
     value_now = env.getValue(agent.state_now, T)
-    value_next = env.getValue(state_next, T)
+    value_next = agent.agent_arg['ob'](env.getValue(state_next, T))
     dE = value_next - value_now
     kT0 = agent.frame_arg['ACT']['xdzx']['kT0']
     cd = agent.frame_arg['ACT']['xdzx']['cool_down']
-    if(dE > 0 or exp(dE / (kT0 * cd**T)) > uniform(0, 1)):
+    if(dE > 0 or exp(dE / (kT0 * cd**(T+Tfi)) > uniform(0, 1))):
         agent.state_now = state_next
+        agent.RenewRsInfo(agent.state_now,
+                          env.getValue(agent.state_now, T),
+                          T)
     return agent
 
 def act_tscs(env, agent, T, Tfi):

@@ -10,8 +10,8 @@ from env import Area
 
 def init_global_arg():
     arg = {
-        'T': 64,  # 模拟总时间
-        "Ts": 64,  # 每个stage的帧数
+        'T': 512,  # 模拟总时间
+        "Ts": 512,  # 每个stage的帧数
         "Nagent": 5  # Agent数量
     }
     return arg
@@ -106,7 +106,7 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     arg['ACT'] = {
         'p': {},
         'xdzx': {
-            'kT0' : 1,
+            'kT0' : 0.5,
             'cool_down': 0.99
         },
         'hqxx': {
