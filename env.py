@@ -82,7 +82,7 @@ class State:
         assert isinstance(s1, State) and isinstance(s2, State)
 
         def bitDist(a, b, p):
-            return a - b if ((a - b)) else b - a
+            return min((a - b + p) % p, (b - a + p) % p)
 
         return sum([bitDist(s1[i], s2[i], State.P) for i in range(State.N)])
 
@@ -105,11 +105,13 @@ class Area:
         self.center = center
         self.mask = mask
         self.dist = dist
+        self.info = {}
 
     def get_dist(self, state):
         return State.getDist(state, self.center)
 
     def getAllPoint(self):
+        logging.debug("start")
         all_point = {int(self.center)}
         bfs_queue = [(self.center, self.dist)]
         head = 0
@@ -119,34 +121,42 @@ class Area:
             if (deep <= 0):
                 continue
             for i in range(len(self.mask)):
-                for dlt in [-1, 1]:
-                    st = s.walk(i, dlt)
-                    i_st = int(st)
-                    if (not i_st in all_point):
-                        all_point.add(i_st)
-                        bfs_queue.append((st, deep - 1))
+                if (int(self.mask[i]) == 1):
+                    for dlt in [-1, 1]:
+                        st = s.walk(i, dlt)
+                        i_st = int(st)
+                        if (not i_st in all_point):
+                            all_point.add(i_st)
+                            bfs_queue.append((st, deep - 1))
+        logging.info("Area:(c:%s, mask:%s, d:%d):num %d"%(str(self.center), str(self.mask), self.dist, len(bfs_queue)))
         return [pair[0] for pair in bfs_queue]
 
     def state_in(self, state):
         assert isinstance(state, State) and state.N == self.center.N
         diff = State.getDiffFrom(state, self.center)
-        if (sum([abs(x) for x in diff]) > self.dist):
+        if (State.getDist(state, self.center) > self.dist):
             return False
         for i in range(state.N):
             if (int(self.mask[i]) == 0 and diff[i] != 0):
                 return False
         return True
 
+    def rand_walk(self, state):
+        assert isinstance(state, State)
+        assert self.state_in(state)
+        able_walk = [i for i in range(state.N) if (int(self.mask[i]) == 1)]
+        return state.walk(random.sample(able_walk, 1)[0],
+                          random.sample([-1, 1], 1)[0])
+
     def sample_near(self, state, sample_num, dfs_r=0):
+        logging.debug("start")
         assert isinstance(state, State)
         assert self.state_in(state)
         retry_num = sample_num
         try_queue = [state]
         head = 0
-        able_walk = [i for i in range(self.N) if (int(self.mask[i]) == 1)]
         while (retry_num > 0 and len(try_queue) < sample_num + 1):
-            st = try_queue[head].walk(random.sample(able_walk, 1),
-                                      random.sample([-1, 1], 1))
+            st = self.rand_walk(try_queue[head])
             if ((not st in try_queue) and self.state_in(st)):
                 try_queue.append(st)
                 if (random.uniform(0, 1) <= dfs_r and head < len(try_queue) - 1):
@@ -208,19 +218,22 @@ class Env:
         return value_st + (value_ed - value_st) * t / self.T
 
     def getAllValue(self, t):
+        logging.debug("start")
         return [self.getValue(State(i), t) for i in range(self.P ** self.N)]
 
     def getAllPeakValue(self, t):
+        logging.debug("start")
         peak_value = []
         for i in range(self.P ** self.N):
             state = State(i)
             state_value = self.getValue(state, t)
             flag = False
-            for j in range(self.N * 2):
-                state_t = state.walk(j // 2, 1 - 2 * (j % 2))
-                if (state_value < self.getValue(state_t, t)):
-                    flag = True
-                    break
+            for j in range(self.N):
+                for dl in [-1, 1]:
+                    state_t = state.walk(j, dl)
+                    if (state_value < self.getValue(state_t, t)):
+                        flag = True
+                        break
             if (not flag):
                 peak_value.append(state_value)
         logging.info("Ti: {}, peak num: {}".format(t, len(peak_value)))

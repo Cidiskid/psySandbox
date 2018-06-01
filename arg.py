@@ -20,9 +20,9 @@ def init_global_arg():
 def init_env_arg(global_arg):
     # NK model
     arg = {
-        'N': 10,
+        'N': 8,
         'K': 0,
-        'p':10,#每个位点状态by Cid
+        'P':5,#每个位点状态by Cid
         'T': global_arg['T'],  # 模拟总时间
         'Tp': global_arg['T']  #每个地形持续时间/地形变化耗时 by Cid
     }
@@ -87,6 +87,12 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     PSManeed_a = 0.5
     arg['PSM']['a-need'] = PSManeed_a * last_arg['PSM']['a-need'] + (1 - PSManeed_a) * PSManeed_r
 
+    arg['area'] = {
+        "sample_num": 100,
+        "max_dist": 3,
+        "mask_num": min(5, env_arg['N'])
+    }
+
     f1 = 1 + 0.5 * tanh(5 * (arg['PSM']['a-need'] - 0.75)) \
          + 0.5 * tanh(5 * (agent_arg['a']['act'] - 0.5))
     g1 = 1 - 0.2 * tanh(5 * (arg['PSM']['p-cplx'] - 0.625))
@@ -95,12 +101,13 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
         'a-m': f1 * g1 * h1,  # 行动动机，代表行动意愿的强度
         'a-th': 0  # 行动阈值，初始0.6，测试版保证行动
     }
-    arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0),
+    arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0)
 
     arg['ACT'] = {
         'p': {},
         'xdzx': {
-            'n_near': 1  # 原定义数值为env_arg['N'] // 2
+            'kT0' : 1,
+            'cool_down': 0.99
         },
         'hqxx': {
             'n_try': 7,
