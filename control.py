@@ -40,7 +40,7 @@ class Control:
                                                                            'dfs_p'])
 
             if (self.agents[i].frame_arg['PROC']['action']):
-                if (self.main_env.getValue(self.agents[i].state_now, Ti) >= self.agents[i].inter_area.info['max']):
+                if (self.main_env.getValue(self.agents[i].state_now, Ti) >= self.agents[i].inter_area.info['max']*0.99):
                     logging.debug("Agent %d, act_hqxx" % (i))
                     self.agents[i] = acts.act_hqxx(self.main_env, self.agents[i], Ti, Tfi)
                 else:

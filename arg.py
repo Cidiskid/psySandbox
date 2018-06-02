@@ -54,7 +54,7 @@ def init_agent_arg(global_arg, env_arg):
             "PSM": {
                 "m-info": [],  # 新内容，存储各种临时信息
                 "m-plan": [],
-                "a-plan": [],
+                "a-plan": None,
                 'a-need': 0,  # 行动需求，原来的f-need
                 's-sc': 0
             },
@@ -117,7 +117,13 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
             "dfs_p" : 0.5,
             "sample_n" : 50
         },
-        'jhnd': {}
+        'jhnd': {
+            "sample_num" : 50,
+            "dfs_r" : 0.5
+        },
+        'jhjc': {
+            "plan_eval": (lambda aim_value, lenght: aim_value * 0.99 * (len(lenght)))
+        }
     }
     xdzx_a = 0.5
     arg['ACT']['p']['xdzx'] = xdzx_a * last_arg['ACT']['p']['xdzx'] + (1 - xdzx_a) * 0.5  # 行动执行的偏好是常数，为0.5
