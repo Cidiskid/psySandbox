@@ -21,7 +21,7 @@ def init_env_arg(global_arg):
     # NK model
     arg = {
         'N': 8,
-        'K': 0,
+        'K': 5  ,
         'P':5,#每个位点状态by Cid
         'T': global_arg['T'],  # 模拟总时间
         'Tp': global_arg['T']  #每个地形持续时间/地形变化耗时 by Cid
@@ -52,8 +52,9 @@ def init_agent_arg(global_arg, env_arg):
         "stage": {},
         "frame": {
             "PSM": {
-                "m-info": {},  # 新内容，存储各种临时信息
+                "m-info": [],  # 新内容，存储各种临时信息
                 "m-plan": [],
+                "a-plan": [],
                 'a-need': 0,  # 行动需求，原来的f-need
                 's-sc': 0
             },
@@ -81,6 +82,7 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
         "p-ugt": Norm(env_arg['ESM']['p-ugt'], 0.01 / agent_arg['a']['insight']),#只是初始值这样获得
         "m-info": deepcopy(last_arg['PSM']['m-info']),#新版用法不一样
         "m-plan": deepcopy(last_arg['PSM']['m-plan']),#新版用法不一样
+        "a-plan": deepcopy(last_arg['PSM']['a-plan']),#拍死他丫的
         "s-sc": deepcopy(last_arg['PSM']['s-sc']) #新版用法不一样
     }
     PSManeed_r = 1.0 / (1 + exp(5 * (PSMfi / arg['PSM']['f-req'] - 1)))
@@ -110,8 +112,10 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
             'cool_down': 0.99
         },
         'hqxx': {
-            'n_try': 7,
-            'p_deep': 0.5
+            "mask_n": 4,
+            "dist": 3,
+            "dfs_p" : 0.5,
+            "sample_n" : 50
         },
         'jhnd': {}
     }

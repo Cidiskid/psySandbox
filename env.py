@@ -96,7 +96,7 @@ class State:
             else:
                 return b - a if (abs(b - a) <= abs((b + p) - a)) else (b + p) - a
 
-        return sum([bitDiffFrom(s1[i], s2[i], State.P) for i in range(State.N)])
+        return [bitDiffFrom(s1[i], s2[i], State.P) for i in range(State.N)]
 
 
 class Area:
@@ -128,7 +128,8 @@ class Area:
                         if (not i_st in all_point):
                             all_point.add(i_st)
                             bfs_queue.append((st, deep - 1))
-        logging.info("Area:(c:%s, mask:%s, d:%d):num %d"%(str(self.center), str(self.mask), self.dist, len(bfs_queue)))
+        logging.info(
+            "Area:(c:%s, mask:%s, d:%d):num %d" % (str(self.center), str(self.mask), self.dist, len(bfs_queue)))
         return [pair[0] for pair in bfs_queue]
 
     def state_in(self, state):
@@ -144,9 +145,14 @@ class Area:
     def rand_walk(self, state):
         assert isinstance(state, State)
         assert self.state_in(state)
+        if (self.dist <= 0 or sum([int(_) for _ in self.mask]) <= 0):
+            return state
         able_walk = [i for i in range(state.N) if (int(self.mask[i]) == 1)]
-        return state.walk(random.sample(able_walk, 1)[0],
-                          random.sample([-1, 1], 1)[0])
+        while (True):
+            state_t = state.walk(random.sample(able_walk, 1)[0],
+                                 random.sample([-1, 1], 1)[0])
+            if (self.state_in(state_t)):
+                return state_t
 
     def sample_near(self, state, sample_num, dfs_r=0):
         logging.debug("start")
@@ -256,6 +262,29 @@ class Env:
 
     def getModelPeakDistri(self, t):
         return Env._getDistri(self.getAllPeakValue(t))
+
+
+def get_area_sample_value(env, area, sample_num, T, state=None, dfs_r=0.5):
+    if (state is None):
+        state = area.center
+    states = area.sample_near(state, sample_num, dfs_r)
+    return [env.getValue(s, T) for s in states]
+
+
+def get_area_sample_distr(env, area, sample_num, T, state=None, dfs_r=0.5):
+    if (state is None):
+        state = area.center
+    logging.debug("start")
+    state_values = get_area_sample_value(env, area, sample_num, T, state, dfs_r)
+    all_value = sorted(state_values)
+    return {
+        "max": all_value[-1],
+        "min": all_value[0],
+        "avg": sum(all_value) / len(all_value),
+        "mid": all_value[len(all_value) // 2],
+        "p0.15": all_value[len(all_value) * 15 // 100],
+        "p0.85": all_value[len(all_value) * 85 // 100],
+    }
 
 
 if (__name__ == "__main__"):
