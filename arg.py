@@ -8,6 +8,7 @@ import logging
 from util.util import max_choice, random_choice, softmaxM1, clip, clip_rsmp, clip_tanh
 from env import Area
 
+
 def init_global_arg():
     arg = {
         'T': 512,  # 模拟总时间
@@ -21,19 +22,43 @@ def init_env_arg(global_arg):
     # NK model
     arg = {
         'N': 8,
-        'K': 5  ,
-        'P':5,#每个位点状态by Cid
+        'K': 5,
+        'P': 5,  # 每个位点状态by Cid
         'T': global_arg['T'],  # 模拟总时间
-        'Tp': global_arg['T']  #每个地形持续时间/地形变化耗时 by Cid
+        'Tp': global_arg['T']  # 每个地形持续时间/地形变化耗时 by Cid
     }
 
     # 环境情景模型模块
     arg['ESM'] = {
         "f-req": 0.75,  # 适应要求，及格线
-        "p-cplx": 1 - 0.75  / (1 + exp(arg['K'] - 5)),
-        #(lambda Tp: 1 - 0.75 ** (1.0 * global_arg['T'] / Tp) / (1 + exp(arg['K'] - 5))),
-        #TODO 修改公式
+        "p-cplx": 1 - 0.75 / (1 + exp(arg['K'] - 5)),
+        # (lambda Tp: 1 - 0.75 ** (1.0 * global_arg['T'] / Tp) / (1 + exp(arg['K'] - 5))),
+        # TODO 修改公式
         "p-ugt": (1 - tanh(0.1 * (global_arg['Ts'] - 32))) * 0.5
+    }
+    arg['area'] = {
+        "sample_num": 100,
+        "max_dist": 3,
+        "mask_num": min(5, arg['N'])
+    }
+    arg['ACT'] = {
+        'xdzx': {
+            'kT0': 0.5,
+            'cool_down': 0.99
+        },
+        'hqxx': {
+            "mask_n": 4,
+            "dist": 3,
+            "dfs_p": 0.5,
+            "sample_n": 50
+        },
+        'jhnd': {
+            "sample_num": 50,
+            "dfs_r": 0.5
+        },
+        'jhjc': {
+            "plan_eval": (lambda aim_value, lenght: aim_value * 0.99 * (len(lenght)))
+        }
     }
     return arg
 
@@ -77,23 +102,17 @@ def init_stage_arg(global_arg, env_arg, agent_arg, last_arg, T):
 def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMfi):
     arg = {}
     arg['PSM'] = {
-        "f-req": Norm(env_arg['ESM']['f-req'], 0.01 / agent_arg['a']['insight']), #只是初始值这样获得
-        "p-cplx": Norm(env_arg['ESM']['p-cplx'], 0.01 / agent_arg['a']['insight']),#只是初始值这样获得
-        "p-ugt": Norm(env_arg['ESM']['p-ugt'], 0.01 / agent_arg['a']['insight']),#只是初始值这样获得
-        "m-info": deepcopy(last_arg['PSM']['m-info']),#新版用法不一样
-        "m-plan": deepcopy(last_arg['PSM']['m-plan']),#新版用法不一样
-        "a-plan": deepcopy(last_arg['PSM']['a-plan']),#拍死他丫的
-        "s-sc": deepcopy(last_arg['PSM']['s-sc']) #新版用法不一样
+        "f-req": Norm(env_arg['ESM']['f-req'], 0.01 / agent_arg['a']['insight']),  # 只是初始值这样获得
+        "p-cplx": Norm(env_arg['ESM']['p-cplx'], 0.01 / agent_arg['a']['insight']),  # 只是初始值这样获得
+        "p-ugt": Norm(env_arg['ESM']['p-ugt'], 0.01 / agent_arg['a']['insight']),  # 只是初始值这样获得
+        "m-info": deepcopy(last_arg['PSM']['m-info']),  # 新版用法不一样
+        "m-plan": deepcopy(last_arg['PSM']['m-plan']),  # 新版用法不一样
+        "a-plan": deepcopy(last_arg['PSM']['a-plan']),  # 拍死他丫的
+        "s-sc": deepcopy(last_arg['PSM']['s-sc'])  # 新版用法不一样
     }
     PSManeed_r = 1.0 / (1 + exp(5 * (PSMfi / arg['PSM']['f-req'] - 1)))
     PSManeed_a = 0.5
     arg['PSM']['a-need'] = PSManeed_a * last_arg['PSM']['a-need'] + (1 - PSManeed_a) * PSManeed_r
-
-    arg['area'] = {
-        "sample_num": 100,
-        "max_dist": 3,
-        "mask_num": min(5, env_arg['N'])
-    }
 
     f1 = 1 + 0.5 * tanh(5 * (arg['PSM']['a-need'] - 0.75)) \
          + 0.5 * tanh(5 * (agent_arg['a']['act'] - 0.5))
@@ -105,26 +124,7 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     }
     arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0)
 
-    arg['ACT'] = {
-        'p': {},
-        'xdzx': {
-            'kT0' : 0.5,
-            'cool_down': 0.99
-        },
-        'hqxx': {
-            "mask_n": 4,
-            "dist": 3,
-            "dfs_p" : 0.5,
-            "sample_n" : 50
-        },
-        'jhnd': {
-            "sample_num" : 50,
-            "dfs_r" : 0.5
-        },
-        'jhjc': {
-            "plan_eval": (lambda aim_value, lenght: aim_value * 0.99 * (len(lenght)))
-        }
-    }
+    arg['ACT'] = {'p':{}}
     xdzx_a = 0.5
     arg['ACT']['p']['xdzx'] = xdzx_a * last_arg['ACT']['p']['xdzx'] + (1 - xdzx_a) * 0.5  # 行动执行的偏好是常数，为0.5
     hqxx_a = 0.5
