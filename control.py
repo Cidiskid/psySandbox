@@ -29,9 +29,9 @@ class Control:
             )
 
         for i in range(len(self.agents)):
-            self.agents[i] = using_brain(self.main_env,
-                                         self.agents[i],
-                                         Ti, Tfi, i)
+            self.agents[i] = using_brain[i](self.main_env,
+                                            self.agents[i],
+                                            Ti, Tfi, i)
     def run_stage(self, Ti, up_info):
         for i in range(len(self.agents)):
             last_arg = deepcopy(self.agents[i].stage_arg)
@@ -86,7 +86,7 @@ class Control:
             #                        'peakmax', 'peakmin', 'peakmid', 'peakavg', 'peak0.75', "peak0.25"]
             moniter.AppendToCsv(csv_head, all_config['result_csv_path'][k])
         csv_head = ['frame'] \
-                   + ["agent%d" % (k) for k in range(self.global_arg['Nagent'])] \
+                   + ["%s%d" % (using_brain[k].func_name,k) for k in range(self.global_arg['Nagent'])] \
                    + ["agent_avg"] \
                    + ['nkmax', 'nkmin', 'nkmid', 'nkavg', 'nk0.75', "nk0.25"]
         moniter.AppendToCsv(csv_head, all_config['result_csv_path'][-1])

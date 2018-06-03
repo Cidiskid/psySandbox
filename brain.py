@@ -5,6 +5,8 @@ import acts
 from util import config,moniter,util
 import logging
 
+global_arg = arg.init_global_arg()
+
 def xdzx_hqxx(env, agent, Ti, Tfi, agent_no):
     if (agent.frame_arg['PROC']['action']):
         if (env.getValue(agent.state_now, Ti) >= agent.inter_area.info['max'] * 0.99):
@@ -24,4 +26,4 @@ def only_xdzx(env, agent, Ti, Tfi, agent_no):
 def single_ver1(env, agent, Ti, Tfi, agent_no):
     pass
 
-using_brain = xdzx_hqxx
+using_brain = [xdzx_hqxx, xdzx_hqxx, only_xdzx, only_xdzx, only_xdzx]
