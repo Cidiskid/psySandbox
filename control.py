@@ -1,11 +1,12 @@
 import arg
-from env import Env
+from env import Env, State, Area, get_area_sample_distr
 from agent import Agent
 from copy import deepcopy
 import acts
-import moniter
+from util import moniter
+from util.config import all_config
 import logging
-from config import all_config
+from brain import  using_brain
 
 class Control:
     def __init__(self):
@@ -13,10 +14,10 @@ class Control:
         self.main_env = Env(arg.init_env_arg(self.global_arg))
         self.agents = []
 
-    def run_frame(self,Ti, up_info):
+    def run_frame(self, Ti, Tfi, up_info):
         for i in range(len(self.agents)):
             last_arg = deepcopy(self.agents[i].frame_arg)
-#            logging.debug("agent %d, %s"%(i,"{}".format(self.agents[i].frame_arg)))
+            #            logging.debug("agent %d, %s"%(i,"{}".format(self.agents[i].frame_arg)))
             self.agents[i].frame_arg = arg.init_frame_arg(
                 global_arg=self.global_arg,
                 env_arg=self.main_env.arg,
@@ -24,15 +25,13 @@ class Control:
                 stage_arg=self.agents[i].stage_arg,
                 last_arg=last_arg,
                 Tp=Ti,
-                PSMfi=self.main_env.getValueFromStates(self.agents[i].state_now, Ti)
+                PSMfi=self.main_env.getValue(self.agents[i].state_now, Ti)
             )
 
         for i in range(len(self.agents)):
-            if(self.agents[i].frame_arg['PROC']['action']):
-                self.agents[i] = acts.act_zybkyb(self.main_env, self.agents[i], Ti)
-            else:
-                pass
-
+            self.agents[i] = using_brain[i](self.main_env,
+                                            self.agents[i],
+                                            Ti, Tfi, i)
     def run_stage(self, Ti, up_info):
         for i in range(len(self.agents)):
             last_arg = deepcopy(self.agents[i].stage_arg)
@@ -42,12 +41,12 @@ class Control:
                                                           last_arg,
                                                           Ti)
         for i in range(self.global_arg['Ts']):
-            logging.info("frame %3d , Ti:%3d"%(i, Ti))
-            self.run_frame(Ti, up_info)
+            logging.info("frame %3d , Ti:%3d" % (i, Ti))
+            self.run_frame(Ti, i, up_info)
             for k in range(self.global_arg["Nagent"]):
                 csv_info = [
                     Ti + i,
-                    self.main_env.getValueFromStates(self.agents[k].state_now, Ti),
+                    self.main_env.getValue(self.agents[k].state_now, Ti),
                     self.agents[k].frame_arg['PSM']['f-req'],
                     int(self.agents[k].frame_arg['PROC']['action']),
                     self.agents[k].frame_arg['PSM']['a-need'],
@@ -56,38 +55,53 @@ class Control:
                     up_info['nkinfo']['mid'],
                     up_info['nkinfo']['avg'],
                     up_info['nkinfo']['p0.75'],
-                    up_info['nkinfo']['p0.25'],
-                    up_info['nk_peak']['max'],
-                    up_info['nk_peak']['min'],
-                    up_info['nk_peak']['mid'],
-                    up_info['nk_peak']['avg'],
-                    up_info['nk_peak']['p0.75'],
-                    up_info['nk_peak']['p0.25']
+                    up_info['nkinfo']['p0.25']
                 ]
                 moniter.AppendToCsv(csv_info, all_config['result_csv_path'][k])
+            agent_value = [self.main_env.getValue(self.agents[k].state_now, Ti) for k in
+                           range(self.global_arg["Nagent"])]
+            csv_info = [Ti + i] \
+                       + agent_value \
+                       + [sum(agent_value) / len(agent_value)] \
+                       + [up_info['nkinfo'][key] for key in ['max', 'min', 'mid', 'avg', 'p0.75', 'p0.25']]
+            moniter.AppendToCsv(csv_info, all_config['result_csv_path'][-1])
 
     def run_exp(self):
         up_info = {}
         for i in range(self.global_arg["Nagent"]):
             self.agents.append(Agent(arg.init_agent_arg(self.global_arg,
                                                         self.main_env.arg)))
-            self.agents[i].state_now = [0 for _ in range(self.main_env.N)]
-        stage_num = self.global_arg['T'] / self.global_arg['Ts']
+            self.agents[i].state_now = State([0 for _ in range(self.main_env.N)])
+            self.agents[i].inter_area.info = get_area_sample_distr(env=self.main_env, T=0,
+                                                                   area=self.agents[i].inter_area,
+                                                                   state=self.agents[i].state_now,
+                                                                   sample_num=self.main_env.arg['ACT']['hqxx'][
+                                                                       'sample_n'],
+                                                                   dfs_r=self.main_env.arg['ACT']['hqxx']['dfs_p'])
+
+        stage_num = self.global_arg['T'] // self.global_arg['Ts']
         for k in range(self.global_arg["Nagent"]):
             csv_head = ['frame', 'SSMfi', 'SSM_f-req', 'proc_action', 'SSM_f_need',
-                        'nkmax', 'nkmin', 'nkmid', 'nkavg', 'nk0.75', "nk0.25",
-                        'peakmax', 'peakmin', 'peakmid', 'peakavg', 'peak0.75', "peak0.25"]
+                        'nkmax', 'nkmin', 'nkmid', 'nkavg', 'nk0.75', "nk0.25"]
+            #                        'peakmax', 'peakmin', 'peakmid', 'peakavg', 'peak0.75', "peak0.25"]
             moniter.AppendToCsv(csv_head, all_config['result_csv_path'][k])
+        csv_head = ['frame'] \
+                   + ["%s%d" % (using_brain[k].func_name,k) for k in range(self.global_arg['Nagent'])] \
+                   + ["agent_avg"] \
+                   + ['nkmax', 'nkmin', 'nkmid', 'nkavg', 'nk0.75', "nk0.25"]
+        moniter.AppendToCsv(csv_head, all_config['result_csv_path'][-1])
         for i in range(stage_num):
             Ti = i * self.global_arg['Ts'] + 1
-            logging.info("stage %3d , Ti:%3d"%(i, Ti))
+            logging.info("stage %3d , Ti:%3d" % (i, Ti))
             up_info['nkinfo'] = self.main_env.getModelDistri(Ti)
-            up_info['nk_peak'] = self.main_env.getModelPeakDistri(Ti)
+            #            up_info['nk_peak'] = self.main_env.getModelPeakDistri(Ti)
             self.run_stage(Ti, up_info)
 
-if(__name__ == "__main__"):
+
+if (__name__ == "__main__"):
     import time
     import os
+
     all_config.load()
     moniter.LogInit()
     logging.info("Start")
@@ -96,17 +110,21 @@ if(__name__ == "__main__"):
     exp_id = "_".join([
         "sigleview",
         time.strftime("%Y%m%d-%H%M%S"),
-        "N"+str(env_arg['N']),
-        "K"+str(env_arg['K']),
-        "T"+str(global_arg['T']),
-        "Ts"+str(global_arg['Ts'])
-        ])
+        "N" + str(env_arg['N']),
+        "K" + str(env_arg['K']),
+        "P" + str(env_arg['P']),
+        "T" + str(global_arg['T']),
+        "Ts" + str(global_arg['Ts'])
+    ])
     try:
-        os.mkdir(os.path.join("result",exp_id))
+        os.mkdir(os.path.join("result", exp_id))
     except:
         pass
     all_config['result_csv_path'] = [
-        os.path.join("result",exp_id, "res_%s_%02d.csv"%(exp_id, i)) for i in range(global_arg["Nagent"])
+        os.path.join("result", exp_id, "res_%s_%02d.csv" % (exp_id, i)) for i in range(global_arg["Nagent"])
     ]
+    all_config['result_csv_path'].append(
+        os.path.join("result", exp_id, "res_%s_overview.csv" % (exp_id))
+    )
     main_control = Control()
     main_control.run_exp()

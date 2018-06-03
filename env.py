@@ -1,22 +1,192 @@
-from config import all_config
-import moniter
+from util.config import all_config
+from util import moniter
 import logging
 import random
 from copy import deepcopy
+import arg
+
+
+class State:
+    N = 0
+    P = 0
+
+    def __init__(self, data=None):
+        if (data is None):
+            self.data = [0 for _ in range(State.N)]
+        elif (type(data) == list):
+            assert len(data) == State.N
+            assert max(data) < State.P and min(data) >= 0
+            self.data = deepcopy(data)
+        elif (type(data) == int):
+            assert 0 <= data < State.P ** State.N
+            self.data = State.int2list(data)
+        else:
+            raise Exception("Init data must be int or list!")
+
+    def __int__(self):
+        return State.list2int(self.data)
+
+    def __str__(self):
+        if (State.P < 10):
+            return ''.join([str(_) for _ in self.data])
+        return '_'.join([str(_) for _ in self.data])
+
+    def __getitem__(self, item):
+        assert 0 <= item < self.N
+        return self.data[item]
+
+    def __setitem__(self, key, value):
+        assert 0 <= key < self.N and 0 <= value < self.P
+        self.data[key] = value
+
+    def walk(self, key, d):
+        assert 0 <= key < self.N
+        to_ret = deepcopy(self)
+        to_ret[key] = (to_ret[key] + d) % self.P
+        return to_ret
+
+    def walk_delta(self, delta):
+        assert len(delta) == self.N
+        to_ret = deepcopy(self)
+        for i in range(len(delta)):
+            to_ret[i] = (to_ret[i] + delta[i]) % self.P
+        return to_ret
+
+    @staticmethod
+    def getGrayCode(N, no):
+        def XOR(a, b):
+            return int(a + b - 2 * a * b)
+
+        ret_code = []
+        for i in range(N):
+            ret_code.append(no % 2)
+            no = no // 2
+        for i in range(N - 1):
+            ret_code[i] = XOR(ret_code[i + 1], ret_code[i])
+        return ret_code
+
+    @staticmethod
+    def int2list(num):
+        code = []
+        for i in range(State.N):
+            code.append(num % State.P)
+            num //= State.P
+        return code
+
+    @staticmethod
+    def list2int(code):
+        return int(sum([code[i] * (State.P ** int(i)) for i in range(len(code))]))
+
+    @staticmethod
+    def getDist(s1, s2):
+        assert isinstance(s1, State) and isinstance(s2, State)
+
+        def bitDist(a, b, p):
+            return min((a - b + p) % p, (b - a + p) % p)
+
+        return sum([bitDist(s1[i], s2[i], State.P) for i in range(State.N)])
+
+    @staticmethod
+    def getDiffFrom(s1, s2):
+        assert isinstance(s1, State) and isinstance(s2, State)
+
+        def bitDiffFrom(a, b, p):
+            if (a < b):
+                return b - a if (abs(b - a) <= abs(b - (a + p))) else b - (a + p)
+            else:
+                return b - a if (abs(b - a) <= abs((b + p) - a)) else (b + p) - a
+
+        return [bitDiffFrom(s1[i], s2[i], State.P) for i in range(State.N)]
+
+
+class Area:
+    def __init__(self, center, mask, dist):
+        assert isinstance(center, State) and len(mask) == center.N
+        self.center = center
+        self.mask = mask
+        self.dist = dist
+        self.info = {}
+
+    def get_dist(self, state):
+        return State.getDist(state, self.center)
+
+    def getAllPoint(self):
+        logging.debug("start")
+        all_point = {int(self.center)}
+        bfs_queue = [(self.center, self.dist)]
+        head = 0
+        while (head < len(bfs_queue)):
+            s, deep = bfs_queue[head]
+            head += 1
+            if (deep <= 0):
+                continue
+            for i in range(len(self.mask)):
+                if (int(self.mask[i]) == 1):
+                    for dlt in [-1, 1]:
+                        st = s.walk(i, dlt)
+                        i_st = int(st)
+                        if (not i_st in all_point):
+                            all_point.add(i_st)
+                            bfs_queue.append((st, deep - 1))
+        logging.info(
+            "Area:(c:%s, mask:%s, d:%d):num %d" % (str(self.center), str(self.mask), self.dist, len(bfs_queue)))
+        return [pair[0] for pair in bfs_queue]
+
+    def state_in(self, state):
+        assert isinstance(state, State) and state.N == self.center.N
+        diff = State.getDiffFrom(state, self.center)
+        if (State.getDist(state, self.center) > self.dist):
+            return False
+        for i in range(state.N):
+            if (int(self.mask[i]) == 0 and diff[i] != 0):
+                return False
+        return True
+
+    def rand_walk(self, state):
+        assert isinstance(state, State)
+        assert self.state_in(state)
+        if (self.dist <= 0 or sum([int(_) for _ in self.mask]) <= 0):
+            return state
+        able_walk = [i for i in range(state.N) if (int(self.mask[i]) == 1)]
+        while (True):
+            state_t = state.walk(random.sample(able_walk, 1)[0],
+                                 random.sample([-1, 1], 1)[0])
+            if (self.state_in(state_t)):
+                return state_t
+
+    def sample_near(self, state, sample_num, dfs_r=0):
+        logging.debug("start")
+        assert isinstance(state, State)
+        assert self.state_in(state)
+        retry_num = sample_num
+        try_queue = [state]
+        head = 0
+        while (retry_num > 0 and len(try_queue) < sample_num + 1):
+            st = self.rand_walk(try_queue[head])
+            if ((not st in try_queue) and self.state_in(st)):
+                try_queue.append(st)
+                if (random.uniform(0, 1) <= dfs_r and head < len(try_queue) - 1):
+                    head += 1
+                retry_num = sample_num
+            else:
+                retry_num -= 1
+        return try_queue
 
 
 class NKmodel:
-    def __init__(self, n, k):
-        assert (type(n) == int and type(k) == int)
+    def __init__(self, n, k, p=2):
+        assert (type(n) == int and type(k) == int and type(p) == int)
         assert (0 <= k < n)
         logging.debug("Init NK model n=%d,k=%d" % (n, k))
         self.N = n
         self.K = k
-        self.theta_func = self.genRandTheta(self.N, self.K)
+        self.P = p
+        self.theta_func = NKmodel.genRandTheta(self.N, self.K, self.P)
 
-    def genRandTheta(self, n, k):
+    @staticmethod
+    def genRandTheta(n, k, p):
         logging.debug("Init NK model -> genRandTheta")
-        k_c_max = 2 ** (k + 1)
+        k_c_max = p ** (k + 1)
         logging.debug("genRandTheta: k_c_max %d*%d=%d" % (n, k_c_max, n * k_c_max))
         ret_map = []
         for i in range(n):
@@ -24,36 +194,14 @@ class NKmodel:
             for j in range(k_c_max):
                 ret_map[i].append(random.random())
         return ret_map
-    @staticmethod
-    def getGrayCode(N, no):
-        def XOR(a, b):
-            return int(a+b-2*a*b)
-        ret_code = []
-        for i in range(N):
-            ret_code.append(no % 2)
-            no = no //  2
-        for i in range(N - 1):
-            ret_code[i] = XOR(ret_code[i + 1], ret_code[i])
-        return ret_code
 
-    @staticmethod
-    def code2int(t_code):
-        return int(sum([t_code[i] * (2 ** int(i)) for i in range(len(t_code))]))
-
-    def getValueFromStates(self, code):
-        assert (len(code) == self.N)
+    def getValue(self, state):
+        assert (state.N == self.N and state.P == self.P)
         rtn_value = 0
-        code_t = code + code
+        code_t = state.data + state.data
         for i in range(self.N):
-            rtn_value += self.theta_func[i][NKmodel.code2int(code_t[i:i + self.K + 1])]
+            rtn_value += self.theta_func[i][State.list2int(code_t[i:i + self.K + 1])]
         return rtn_value / self.N
-
-    def getValue(self, x):
-        assert (type(x) == int)
-        assert (0 <= x < 2 ** self.N)
-        rtn_value = self.getValueFromStates(NKmodel.getGrayCode(self.N, x))
-        logging.debug("nkmodel->getValue {} rtn={}".format(x, rtn_value))
-        return rtn_value
 
 
 class Env:
@@ -61,39 +209,38 @@ class Env:
         self.arg = arg
         self.N = arg['N']
         self.K = arg['K']
-        self.models = {"st": NKmodel(self.N,self.K),
-                       "ed": NKmodel(self.N,self.K)}
+        self.P = arg['P']
+        State.N = self.N
+        State.P = self.P
+        self.models = {"st": NKmodel(self.N, self.K, self.P),
+                       "ed": NKmodel(self.N, self.K, self.P)}
         self.T = arg['T']
         self.ESM = arg['ESM']
 
-    def getValueFromStates(self, code, t):
-        assert (len(code) == self.N)
-        value_st = self.models["st"].getValueFromStates(code)
-        value_ed = self.models["ed"].getValueFromStates(code)
+    def getValue(self, state, t):
+        assert (state.N == self.N and state.P == self.P)
+        value_st = self.models["st"].getValue(state)
+        value_ed = self.models["ed"].getValue(state)
         return value_st + (value_ed - value_st) * t / self.T
 
-    def getValue(self, x, t):
-        assert (type(x) == int)
-        assert (0 <= x < 2**self.N)
-        return self.getValueFromStates(NKmodel.getGrayCode(self.N, x), t)
-
     def getAllValue(self, t):
-        return [self.getValue(i, t) for i in range(2**self.N)]
+        logging.debug("start")
+        return [self.getValue(State(i), t) for i in range(self.P ** self.N)]
 
     def getAllPeakValue(self, t):
+        logging.debug("start")
         peak_value = []
-        for i in range(2**self.N):
-            state = NKmodel.getGrayCode(self.N, i)
-            state_value = self.getValueFromStates(state, t)
-
+        for i in range(self.P ** self.N):
+            state = State(i)
+            state_value = self.getValue(state, t)
             flag = False
             for j in range(self.N):
-                state_t = deepcopy(state)
-                state_t[j] = 1 - int(state[j])
-                if(state_value < self.getValueFromStates(state_t, t)):
-                    flag = True
-                    continue
-            if(not flag):
+                for dl in [-1, 1]:
+                    state_t = state.walk(j, dl)
+                    if (state_value < self.getValue(state_t, t)):
+                        flag = True
+                        break
+            if (not flag):
                 peak_value.append(state_value)
         logging.info("Ti: {}, peak num: {}".format(t, len(peak_value)))
         return peak_value
@@ -104,10 +251,10 @@ class Env:
         return {
             "max": all_value[-1],
             "min": all_value[0],
-            "avg": sum(all_value)/len(all_value),
-            "mid": all_value[len(all_value)//2],
-            "p0.25": all_value[len(all_value)//4],
-            "p0.75": all_value[len(all_value)*3//4],
+            "avg": sum(all_value) / len(all_value),
+            "mid": all_value[len(all_value) // 2],
+            "p0.25": all_value[len(all_value) // 4],
+            "p0.75": all_value[len(all_value) * 3 // 4],
         }
 
     def getModelDistri(self, t):
@@ -117,8 +264,34 @@ class Env:
         return Env._getDistri(self.getAllPeakValue(t))
 
 
+def get_area_sample_value(env, area, sample_num, T, state=None, dfs_r=0.5):
+    if (state is None):
+        state = area.center
+    states = area.sample_near(state, sample_num, dfs_r)
+    return [env.getValue(s, T) for s in states]
+
+
+def get_area_sample_distr(env, area, sample_num, T, state=None, dfs_r=0.5):
+    if (state is None):
+        state = area.center
+    logging.debug("start")
+    state_values = get_area_sample_value(env, area, sample_num, T, state, dfs_r)
+    all_value = sorted(state_values)
+    return {
+        "max": all_value[-1],
+        "min": all_value[0],
+        "avg": sum(all_value) / len(all_value),
+        "mid": all_value[len(all_value) // 2],
+        "p0.15": all_value[len(all_value) * 15 // 100],
+        "p0.85": all_value[len(all_value) * 85 // 100],
+    }
+
+
 if (__name__ == "__main__"):
     import numpy as np
+
+    pass
+'''
     all_config.load()
     moniter.LogInit()
     logging.info("Start")
@@ -129,8 +302,9 @@ if (__name__ == "__main__"):
     for i in range(1):
         feat = []
         value = []
-        for j in range(2**N):
+        for j in range(2 ** N):
             feat.append(NKmodel.getGrayCode(N, j))
             value.append(env.getValue(x=j, t=i))
-#        moniter.DrawHist(point_pairs)
+        #        moniter.DrawHist(point_pairs)
         moniter.Draw2DViaPCA(feat, value)
+'''

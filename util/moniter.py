@@ -3,7 +3,6 @@ import logging
 import time
 import csv
 
-
 def LogInit():
     all_config.load()
     logging.basicConfig(level=logging._checkLevel(all_config['log']['filelv']),
