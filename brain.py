@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 import env
 import agent
 import arg
@@ -26,4 +27,4 @@ def only_xdzx(env, agent, Ti, Tfi, agent_no):
 def single_ver1(env, agent, Ti, Tfi, agent_no):
     pass
 
-using_brain = [xdzx_hqxx, xdzx_hqxx, only_xdzx, only_xdzx, only_xdzx]
+using_brain = [only_xdzx, only_xdzx, only_xdzx, only_xdzx, only_xdzx]

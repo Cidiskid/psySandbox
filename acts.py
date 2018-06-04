@@ -24,14 +24,18 @@ def act_zybkyb(env, agent, T, Tfi):
     return agent
 
 
-def act_xdzx(env, agent, T, Tfi):  # 行动执行
+def act_xdzx(env, agent, T, Tfi):  # 行动执行，T代表该stage第一帧的时间戳，Tfi表示该帧的相对偏移（本stage的第几帧）
     state_next = agent.inter_area.rand_walk(agent.state_now)
     value_now = env.getValue(agent.state_now, T)
     value_next = agent.agent_arg['ob'](env.getValue(state_next, T))
     dE = value_next - value_now
     kT0 = env.arg['ACT']['xdzx']['kT0']
     cd = env.arg['ACT']['xdzx']['cool_down']
-    if (dE > 0 or exp(dE / (kT0 * cd ** (T + Tfi))) > uniform(0, 1)):
+
+    # 随着时间推移，容忍度越来越低 TODO 调整行动逻辑
+    fake_stage = 16  # 静态测试时，fake一个stage的分隔
+    cd_T = 10*round((T+Tfi)/fake_stage, 0)  # default cd_T = T+Tfi TODO 需要wzk帮忙改为从arg中传参数的模式
+    if (dE > 0 or exp(dE / (kT0 * cd ** cd_T)) > uniform(0, 1)):
         #        logging.debug("dE:{}, k:{}, p:{}".format(dE, (kT0 * cd ** (T + Tfi)), exp(dE / (kT0 * cd ** (T + Tfi)))))
         agent.state_now = state_next
     #        agent.RenewRsInfo(agent.state_now,env.getValue(agent.state_now, T),T)

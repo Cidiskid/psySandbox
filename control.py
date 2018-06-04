@@ -1,3 +1,5 @@
+# -*- coding:utf-8 -*-
+
 import arg
 from env import Env, State, Area, get_area_sample_distr
 from agent import Agent
@@ -6,7 +8,7 @@ import acts
 from util import moniter
 from util.config import all_config
 import logging
-from brain import  using_brain
+from brain import using_brain
 
 class Control:
     def __init__(self):
@@ -14,7 +16,9 @@ class Control:
         self.main_env = Env(arg.init_env_arg(self.global_arg))
         self.agents = []
 
+    # Frame运行过程，Ti表示所处stage的第一帧时间戳，Tfi表示stage中第几帧的时间戳
     def run_frame(self, Ti, Tfi, up_info):
+        # 将每个Agent的中间状态初始化
         for i in range(len(self.agents)):
             last_arg = deepcopy(self.agents[i].frame_arg)
             #            logging.debug("agent %d, %s"%(i,"{}".format(self.agents[i].frame_arg)))
@@ -28,10 +32,12 @@ class Control:
                 PSMfi=self.main_env.getValue(self.agents[i].state_now, Ti)
             )
 
+        # 每个Agent依次按Brain中的策略行动
         for i in range(len(self.agents)):
             self.agents[i] = using_brain[i](self.main_env,
                                             self.agents[i],
-                                            Ti, Tfi, i)
+                                              Ti, Tfi, i)
+    # Stage运行过程
     def run_stage(self, Ti, up_info):
         for i in range(len(self.agents)):
             last_arg = deepcopy(self.agents[i].stage_arg)
@@ -42,6 +48,8 @@ class Control:
                                                           Ti)
         for i in range(self.global_arg['Ts']):
             logging.info("frame %3d , Ti:%3d" % (i, Ti))
+
+            # 运行Frame
             self.run_frame(Ti, i, up_info)
             for k in range(self.global_arg["Nagent"]):
                 csv_info = [
@@ -66,8 +74,10 @@ class Control:
                        + [up_info['nkinfo'][key] for key in ['max', 'min', 'mid', 'avg', 'p0.75', 'p0.25']]
             moniter.AppendToCsv(csv_info, all_config['result_csv_path'][-1])
 
+# 实验运行过程
     def run_exp(self):
         up_info = {}
+
         for i in range(self.global_arg["Nagent"]):
             self.agents.append(Agent(arg.init_agent_arg(self.global_arg,
                                                         self.main_env.arg)))
@@ -95,13 +105,15 @@ class Control:
             logging.info("stage %3d , Ti:%3d" % (i, Ti))
             up_info['nkinfo'] = self.main_env.getModelDistri(Ti)
             #            up_info['nk_peak'] = self.main_env.getModelPeakDistri(Ti)
+
+            # 运行一个Stage，Ti表示每个Stage的第一帧
             self.run_stage(Ti, up_info)
 
 
 if (__name__ == "__main__"):
     import time
     import os
-
+# 准备工作，初始化实验环境，生成实验结果文件夹等
     all_config.load()
     moniter.LogInit()
     logging.info("Start")
@@ -127,4 +139,4 @@ if (__name__ == "__main__"):
         os.path.join("result", exp_id, "res_%s_overview.csv" % (exp_id))
     )
     main_control = Control()
-    main_control.run_exp()
+    main_control.run_exp()  # 开始运行实验
