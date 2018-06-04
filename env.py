@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 from util.config import all_config
 from util import moniter
 import logging
@@ -142,6 +143,7 @@ class Area:
                 return False
         return True
 
+# TODO 解释具体原理
     def rand_walk(self, state):
         assert isinstance(state, State)
         assert self.state_in(state)
