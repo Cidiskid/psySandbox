@@ -291,22 +291,14 @@ def get_area_sample_distr(env, area, sample_num, T, state=None, dfs_r=0.5):
 
 if (__name__ == "__main__"):
     import numpy as np
-
-    pass
-'''
     all_config.load()
     moniter.LogInit()
     logging.info("Start")
-    N = 12
-    k = 10
-    T = 100
-    env = Env(N, k, T)
-    for i in range(1):
-        feat = []
-        value = []
-        for j in range(2 ** N):
-            feat.append(NKmodel.getGrayCode(N, j))
-            value.append(env.getValue(x=j, t=i))
-        #        moniter.DrawHist(point_pairs)
-        moniter.Draw2DViaPCA(feat, value)
-'''
+    global_arg = arg.init_global_arg()
+    env_arg = arg.init_env_arg(global_arg)
+    N = env_arg['N']
+    k = env_arg['K']
+    P = env_arg['P']
+    T = env_arg['T']
+    env = Env(env_arg)
+    print(env.getModelPeakDistri(0))

@@ -22,8 +22,8 @@ def init_env_arg(global_arg):
     # NK model
     arg = {
         'N': 8,
-        'K': 1,
-        'P': 5,  # 每个位点状态by Cid
+        'K': 0,
+        'P': 3,  # 每个位点状态by Cid
         'T': global_arg['T'],  # 模拟总时间
         'Tp': global_arg['T']  # 每个地形持续时间/地形变化耗时 by Cid
     }
@@ -49,7 +49,7 @@ def init_env_arg(global_arg):
         # 行动执行相关参数表
         'xdzx': {
             'kT0': 0.01,  #  default 0.5
-            'cool_down': 1  # default 0。99
+            'cool_down': 0.99  # default 0.99
         },
         # 获取信息相关参数表
         'hqxx': {
@@ -83,7 +83,7 @@ def init_agent_arg(global_arg, env_arg):
     }
 
     # 适应分数观察值的偏差
-    ob_a = 0.001  # default 0.025
+    ob_a = 0.000  # default 0.025
     arg["ob"] = (lambda x: Norm(x, ob_a / arg['a']['insight']))  #原公式，
 #    arg["ob"] = (lambda x: Norm(x, 0.05))  #测试公式
 
