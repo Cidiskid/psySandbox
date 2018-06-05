@@ -18,13 +18,14 @@ def xdzx_hqxx(env, agent, Ti, Tfi, agent_no):
             agent = acts.act_xdzx(env, agent, Ti, Tfi)
     return agent
 
-def only_xdzx(env, agent, Ti, Tfi, agent_no):
+# 仅自由执行，作为baseline
+def only_zyzx(env, agent, Ti, Tfi, agent_no):
     if (agent.frame_arg['PROC']['action']):
-        logging.debug("Agent %d, act_xdzx" % (agent_no))
-        agent = acts.act_xdzx(env, agent, Ti, Tfi)
+        logging.debug("Agent %d, act_zyzx" % (agent_no))
+        agent = acts.act_zyzx(env, agent, Ti, Tfi)
     return agent
 
 def single_ver1(env, agent, Ti, Tfi, agent_no):
     pass
 
-using_brain = [only_xdzx, only_xdzx, only_xdzx, only_xdzx, only_xdzx]
+using_brain = [only_zyzx, only_zyzx, only_zyzx, only_zyzx, only_zyzx]
