@@ -147,9 +147,9 @@ class Area:
     def rand_walk(self, state):
         assert isinstance(state, State)
         assert self.state_in(state)
-        if (self.dist <= 0 or sum([int(_) for _ in self.mask]) <= 0):
+        if (self.dist <= 0 or sum([int(_) for _ in self.mask]) <= 0):  # 若输入dist或mask小于等于零，无效参数，中断
             return state
-        able_walk = [i for i in range(state.N) if (int(self.mask[i]) == 1)]
+        able_walk = [i for i in range(state.N) if (int(self.mask[i]) == 1)]  # 随机选择mask位允许修改
         while (True):
             state_t = state.walk(random.sample(able_walk, 1)[0],
                                  random.sample([-1, 1], 1)[0])

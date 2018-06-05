@@ -11,8 +11,8 @@ from env import Area
 
 def init_global_arg():
     arg = {
-        'T': 2048,  # 模拟总时间
-        "Ts": 2048,  # 每个stage的帧数
+        'T': 512,  # 模拟总时间
+        "Ts": 16,  # 每个stage的帧数
         "Nagent": 5  # Agent数量
     }
     return arg
