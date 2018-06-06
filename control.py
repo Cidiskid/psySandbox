@@ -88,6 +88,7 @@ class Control:
                                                                    sample_num=self.main_env.arg['ACT']['hqxx'][
                                                                        'sample_n'],
                                                                    dfs_r=self.main_env.arg['ACT']['hqxx']['dfs_p'])
+            self.agents[i].inter_area.info['start_t'] = 0
 
         stage_num = self.global_arg['T'] // self.global_arg['Ts']
         for k in range(self.global_arg["Nagent"]):
@@ -100,6 +101,7 @@ class Control:
                    + ["agent_avg"] \
                    + ['nkmax', 'nkmin', 'nkmid', 'nkavg', 'nk0.75', "nk0.25"]
         moniter.AppendToCsv(csv_head, all_config['result_csv_path'][-1])
+
         for i in range(stage_num):
             Ti = i * self.global_arg['Ts'] + 1
             logging.info("stage %3d , Ti:%3d" % (i, Ti))

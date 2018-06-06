@@ -14,7 +14,7 @@ class Agent:
         self.state_now = None
         self.inter_area = Area(State(0),
                                [True for i in range(State.N)],
-                               State.P * State.N)
+                               (State.P // 2) * State.N)
 
     def RenewRsInfo(self, state, value, T):
         self.frame_arg["PSM"]['m-info'][int(state)] = {'T': T, 'value': value}
