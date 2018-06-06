@@ -112,7 +112,7 @@ class Area:
         return State.getDist(state, self.center)
 
     def get_mask_num(self):
-        return sum([ int(x) for x in self.mask if int(x) == 1])
+        return sum([int(x) for x in self.mask if int(x) == 1])
 
     def getAllPoint(self):
         logging.debug("start")
@@ -146,7 +146,7 @@ class Area:
                 return False
         return True
 
-# TODO 解释具体原理
+    # TODO 解释具体原理
     def rand_walk(self, state):
         assert isinstance(state, State)
         assert self.state_in(state)
@@ -294,6 +294,7 @@ def get_area_sample_distr(env, area, sample_num, T, state=None, dfs_r=0.5):
 
 if (__name__ == "__main__"):
     import numpy as np
+
     all_config.load()
     moniter.LogInit()
     logging.info("Start")

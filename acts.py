@@ -40,8 +40,8 @@ def act_zyzx(env, agent, T, Tfi):
     dE = value_next - value_now
     kT0 = env.arg['ACT']['xdzx']['kT0']
 
-    cd = env.arg['ACT']['xdzx']['cool_down']*(1-exp(-0.8*inter_area_dist))  # 区域越小，cd越小，收敛越快
-    #cd = env.arg['ACT']['xdzx']['cool_down'] ** (env.arg['P'] ** (env.arg['N'] - inter_area_mskn))
+    cd = env.arg['ACT']['xdzx']['cool_down'] * (1 - exp(-0.8 * inter_area_dist))  # 区域越小，cd越小，收敛越快
+    # cd = env.arg['ACT']['xdzx']['cool_down'] ** (env.arg['P'] ** (env.arg['N'] - inter_area_mskn))
     # 随着时间推移，容忍度越来越低 TODO 调整行动逻辑
     fake_stage = 16  # 静态测试时，fake一个stage的分隔
     run_time = T + Tfi - agent.inter_area.info['start_t']
@@ -51,12 +51,13 @@ def act_zyzx(env, agent, T, Tfi):
     logging.debug("cd:{}".format(cd))
     logging.debug("tol:{}".format(tol))
 
-    if(dE >=0):
+    if (dE >= 0):
         agent.state_now = state_next
-    elif(tol >= 1e-10 and exp(dE / (tol)) > uniform(0, 1)):   # 容忍度过低时，直接跳过，避免后续出错
+    elif (tol >= 1e-10 and exp(dE / (tol)) > uniform(0, 1)):  # 容忍度过低时，直接跳过，避免后续出错
         agent.state_now = state_next
 
     return agent
+
 
 def act_jhzx(env, agent, T, Tfi):  # 计划执行
     assert (len(agent.frame_arg['PSM']['a-plan']['plan']) > 0)
@@ -151,6 +152,3 @@ def act_jhjc(env, agent, T, Tfi):  # 计划决策
     if (best_value > org_plan_value):
         agent.frame_arg['PSM']['a-plan'] = agent.frame_arg['PSM']['m-plan'][best_plan]
     return agent
-
-
-

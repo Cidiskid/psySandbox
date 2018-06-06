@@ -3,10 +3,11 @@ import env
 import agent
 import arg
 import acts
-from util import config,moniter,util
+from util import config, moniter, util
 import logging
 
 global_arg = arg.init_global_arg()
+
 
 def hqxx_zyzx(env, agent, Ti, Tfi, agent_no):
     if (agent.frame_arg['PROC']['action']):
@@ -18,6 +19,7 @@ def hqxx_zyzx(env, agent, Ti, Tfi, agent_no):
             agent = acts.act_zyzx(env, agent, Ti, Tfi)
     return agent
 
+
 # 仅自由执行，作为baseline
 def only_zyzx(env, agent, Ti, Tfi, agent_no):
     if (agent.frame_arg['PROC']['action']):
@@ -25,7 +27,9 @@ def only_zyzx(env, agent, Ti, Tfi, agent_no):
         agent = acts.act_zyzx(env, agent, Ti, Tfi)
     return agent
 
+
 def single_ver1(env, agent, Ti, Tfi, agent_no):
     pass
+
 
 using_brain = [hqxx_zyzx, hqxx_zyzx, hqxx_zyzx, hqxx_zyzx, hqxx_zyzx]

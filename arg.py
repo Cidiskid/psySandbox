@@ -54,9 +54,9 @@ def init_env_arg(global_arg):
         },
         # 获取信息相关参数表
         'hqxx': {
-            "mask_n": 2,    # 区域的方向夹角大小，指区域内的点中允许变化的位点数量
-            "dist": 3,      # 区域半径，所有点和中心点的最大距离
-            "dfs_p": 0.5,   # 表示多大概率往深了走
+            "mask_n": 2,  # 区域的方向夹角大小，指区域内的点中允许变化的位点数量
+            "dist": 3,  # 区域半径，所有点和中心点的最大距离
+            "dfs_p": 0.5,  # 表示多大概率往深了走
             "sample_n": 50  # 从区域中抽样的数量
         },
         # 计划拟定相关参数表
@@ -85,8 +85,8 @@ def init_agent_arg(global_arg, env_arg):
 
     # 适应分数观察值的偏差
     ob_a = 0.01  # default 0.025
-    arg["ob"] = (lambda x: Norm(x, ob_a / arg['a']['insight']))  #原公式，
-#    arg["ob"] = (lambda x: Norm(x, 0.05))  #测试公式
+    arg["ob"] = (lambda x: Norm(x, ob_a / arg['a']['insight']))  # 原公式，
+    #    arg["ob"] = (lambda x: Norm(x, 0.05))  #测试公式
 
     arg['default'] = {
         "stage": {},  # 各种第0个stage的参数放在这里
@@ -115,12 +115,14 @@ def init_agent_arg(global_arg, env_arg):
 def init_stage_arg(global_arg, env_arg, agent_arg, last_arg, T):
     return {}
 
+
 # 每帧刷新的参数列表
 def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMfi):
     arg = {}
 
     arg['PSM'] = {
-        "f-req": Norm(env_arg['ESM']['f-req'], 0.01 / agent_arg['a']['insight']),  # TODO 提问：只是初始值这样获得，是否移动到agent[default][frame]里？
+        "f-req": Norm(env_arg['ESM']['f-req'], 0.01 / agent_arg['a']['insight']),
+    # TODO 提问：只是初始值这样获得，是否移动到agent[default][frame]里？
         "p-cplx": Norm(env_arg['ESM']['p-cplx'], 0.01 / agent_arg['a']['insight']),  # 只是初始值这样获得
         "p-ugt": Norm(env_arg['ESM']['p-ugt'], 0.01 / agent_arg['a']['insight']),  # 只是初始值这样获得
         "m-info": deepcopy(last_arg['PSM']['m-info']),  # 新版用法不一样
@@ -145,8 +147,8 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     }
     arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0)  # TRUE行动，FALSE不行动
 
-# 以下参与用于确定采取何种行动的过程 TODO 提问：和Brain的关系？
-    arg['ACT'] = {'p':{}}
+    # 以下参与用于确定采取何种行动的过程 TODO 提问：和Brain的关系？
+    arg['ACT'] = {'p': {}}
     # 行动执行的偏好分
     xdzx_a = 0.5
     arg['ACT']['p']['xdzx'] = xdzx_a * last_arg['ACT']['p']['xdzx'] + (1 - xdzx_a) * 0.5  # 行动执行的偏好是常数，为0.5
