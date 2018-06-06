@@ -111,6 +111,9 @@ class Area:
     def get_dist(self, state):
         return State.getDist(state, self.center)
 
+    def get_mask_num(self):
+        return sum([ int(x) for x in self.mask if int(x) == 1])
+
     def getAllPoint(self):
         logging.debug("start")
         all_point = {int(self.center)}

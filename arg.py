@@ -12,7 +12,7 @@ from env import Area
 def init_global_arg():
     arg = {
         'T': 512,  # 模拟总时间
-        "Ts": 16,  # 每个stage的帧数
+        "Ts": 512,  # 每个stage的帧数
         "Nagent": 5  # Agent数量
     }
     return arg
@@ -21,9 +21,9 @@ def init_global_arg():
 def init_env_arg(global_arg):
     # NK model
     arg = {
-        'N': 8,
-        'K': 0,
-        'P': 3,  # 每个位点状态by Cid
+        'N': 6,
+        'K': 2,
+        'P': 4,  # 每个位点状态by Cid
         'T': global_arg['T'],  # 模拟总时间
         'Tp': global_arg['T']  # 每个地形持续时间/地形变化耗时 by Cid
     }
@@ -48,12 +48,13 @@ def init_env_arg(global_arg):
     arg['ACT'] = {
         # 行动执行相关参数表
         'xdzx': {
-            'kT0': 0.01,  #  default 0.5
-            'cool_down': 0.99  # default 0.99
+            # zyzx自由执行相关参数
+            'kT0': 0.01,  # default 0.5
+            'cool_down': 0.995,  # default 0.99
         },
         # 获取信息相关参数表
         'hqxx': {
-            "mask_n": 4,    # 区域内的点和中心点有差异的位点数量
+            "mask_n": 2,    # 区域的方向夹角大小，指区域内的点中允许变化的位点数量
             "dist": 3,      # 区域半径，所有点和中心点的最大距离
             "dfs_p": 0.5,   # 表示多大概率往深了走
             "sample_n": 50  # 从区域中抽样的数量
@@ -83,7 +84,7 @@ def init_agent_arg(global_arg, env_arg):
     }
 
     # 适应分数观察值的偏差
-    ob_a = 0.000  # default 0.025
+    ob_a = 0.01  # default 0.025
     arg["ob"] = (lambda x: Norm(x, ob_a / arg['a']['insight']))  #原公式，
 #    arg["ob"] = (lambda x: Norm(x, 0.05))  #测试公式
 
