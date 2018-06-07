@@ -24,11 +24,3 @@ class Agent:
                 rm_s.append(s)
         for s in rm_s:
             del self.frame_arg["PSM"]['m-info'][s]
-
-class Group:
-    def __init__(self):
-        pass
-
-class Network:
-    def __init__(self):
-        pass
