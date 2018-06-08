@@ -43,6 +43,14 @@ class SoclNet:
             for j in self.relat.node():
                 self.power.add_weighted_edges_from([(i, j, 0.5)])
 
+    def custom_init(self, relat_m, power_m):
+        for i in range(self.arg['N']):
+            for j in range(self.arg['N']):
+                self.relat.add_weighted_edges_from([(i, j, relat_m[i][j])])
+        for i in range(self.arg['N']):
+            for j in range(self.arg['N']):
+                self.power.add_weighted_edges_from([(i, j, power_m[i][j])])
+
     def gen_relat_lk_graph(self, lk_func):
         self.relat_lk.clear()
         for u, v in self.relat.edges:

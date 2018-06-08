@@ -24,3 +24,17 @@ class Agent:
                 rm_s.append(s)
         for s in rm_s:
             del self.frame_arg["PSM"]['m-info'][s]
+
+    def renew_m_info_list(self, area_list, T):
+        self.frame_arg["PSM"]['m-info'] += area_list
+        for i in range(len(self.frame_arg["PSM"]['m-info']), -1, -1):
+            if (self.frame_arg["PSM"]['m-info'][i].info['T_stmp'] < T - self.agent_arg['a']['rmb']):
+                del self.frame_arg["PSM"]['m-info'][i]
+
+    def renew_m_info(self, area, T):
+        self.renew_m_info([area], T)
+
+    def get_latest_m_info(self, latest_t, max_num):
+        ret = [ar for ar in self.frame_arg['PSM']['m-info'] if ar.info['T_stmp'] >= latest_t]
+        ret.sort(key=lambda ar: -ar.info['max'])
+        return ret[:max_num]

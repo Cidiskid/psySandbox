@@ -276,7 +276,7 @@ def get_area_sample_value(env, area, sample_num, T, state=None, dfs_r=0.5):
     return [env.getValue(s, T) for s in states]
 
 
-def get_area_sample_distr(env, area, sample_num, T, state=None, dfs_r=0.5):
+def get_area_sample_distr(env, area, sample_num, T, Tfi, state=None, dfs_r=0.5):
     if (state is None):
         state = area.center
     logging.debug("start")
@@ -289,6 +289,7 @@ def get_area_sample_distr(env, area, sample_num, T, state=None, dfs_r=0.5):
         "mid": all_value[len(all_value) // 2],
         "p0.15": all_value[len(all_value) * 15 // 100],
         "p0.85": all_value[len(all_value) * 85 // 100],
+        'T_stmp': T + Tfi
     }
 
 

@@ -51,10 +51,12 @@ def act_zyzx(env, agent, T, Tfi):
     logging.debug("cd:{}".format(cd))
     logging.debug("tol:{}".format(tol))
 
-    if (dE >= 0):
+    if (dE >= 0 or (tol >= 1e-10 and exp(dE / tol) > uniform(0, 1))):
         agent.state_now = state_next
-    elif (tol >= 1e-10 and exp(dE / (tol)) > uniform(0, 1)):  # 容忍度过低时，直接跳过，避免后续出错
-        agent.state_now = state_next
+        new_area = Area(agent.state_now, [False for i in range(env.N)], 0)
+        new_area.info = get_area_sample_distr(env=env, area=new_area, T=T, Tfi=Tfi, state=agent.state_now,
+                                              sample_num=1, dfs_r=1)
+        agent.renew_m_info(new_area, T + Tfi)
 
     return agent
 
@@ -63,6 +65,12 @@ def act_jhzx(env, agent, T, Tfi):  # 计划执行
     assert (len(agent.frame_arg['PSM']['a-plan']['plan']) > 0)
     agent.state_now = agent.frame_arg['PSM']['a-plan']['plan'][0]
     #    agent.RenewRsInfo(agent.state_now, env.getValueFromStates(agent.state_now, T), T)
+
+    new_area = Area(agent.state_now, [False for i in range(env.N)], 0)
+    new_area.info = get_area_sample_distr(env=env, area=new_area, T=T, Tfi=Tfi, state=agent.state_now,
+                                          sample_num=1, dfs_r=1)
+    agent.renew_m_info(new_area, T + Tfi)
+
     del agent.frame_arg['PSM']['a-plan']['plan'][0]
     if (len(agent.frame_arg['PSM']['a-plan']['plan']) <= 0):
         agent.frame_arg['PSM']['a-plan'] = None
@@ -90,12 +98,11 @@ def act_hqxx(env, agent, T, Tfi):  # 获取信息
     new_area = Area(state_t, mask_t, env.arg['ACT']['hqxx']['dist'])
 
     # 从区域中取样，获取信息，目前支持Max，Min,Avg,Mid,p0.15,p0.85
-    new_area.info = get_area_sample_distr(env=env, area=new_area, T=T, state=agent.state_now,
+    new_area.info = get_area_sample_distr(env=env, area=new_area, T=T, Tfi=Tfi, state=agent.state_now,
                                           sample_num=env.arg['ACT']['hqxx']['sample_n'],
                                           dfs_r=env.arg['ACT']['hqxx']['dfs_p'])  # TODO 增加随机取样的选项
-
     # 把信息更新到状态中
-    agent.frame_arg['PSM']['m-info'].append(new_area)
+    agent.renew_m_info(new_area, T + Tfi)
     if (not 'max' in agent.inter_area.info or agent.inter_area.info['max'] < new_area.info['max']):
         agent.inter_area = new_area
         agent.inter_area.info['start_t'] = T + Tfi

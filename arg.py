@@ -69,6 +69,13 @@ def init_env_arg(global_arg):
             "plan_eval": (lambda aim_value, lenght: aim_value * 0.99 * (len(lenght)))
         }
     }
+
+    arg['meeting'] = {
+        'xxjl' : {
+            'last_p_t': 32,
+            'max_num': 3
+        }
+    }
     return arg
 
 
@@ -80,7 +87,7 @@ def init_agent_arg(global_arg, env_arg):
         "act": Norm(0.5, 0.1),  # 行动意愿
         "xplr": Norm(0.5, 0.3),  # 探索倾向
         "xplt": Norm(0.5, 0.3),  # 利用倾向
-        "rmb": 8
+        "rmb": 64
     }
 
     # 适应分数观察值的偏差
@@ -111,6 +118,9 @@ def init_agent_arg(global_arg, env_arg):
     }
     return arg
 
+def init_group_arg(global_arg, env_arg, T):
+    arg = {}
+    return arg
 
 def init_stage_arg(global_arg, env_arg, agent_arg, last_arg, T):
     return {}

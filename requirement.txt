@@ -12,6 +12,7 @@ jedi==0.12.0
 kiwisolver==1.0.1
 matplotlib==2.2.2
 mock==2.0.0
+networkx==2.1
 numpy==1.11.1
 parso==0.2.0
 pbr==3.0.1
