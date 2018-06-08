@@ -62,3 +62,9 @@ class SoclNet:
     def relat_cd(self, cd_rate=0.95):
         for u, v in self.relat.edges:
             self.relat[u][v]['weight'] *= cd_rate
+
+    def get_power_close_centrality(self):
+        for u in self.power.nodes:
+            for v in self.power.nodes:
+                self.power[u][v]['dist'] = 1 / (0.01 + self.power[u][v]['weight']) + 0.01
+        return nx.closeness_centrality(G=G, distance='dist')

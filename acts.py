@@ -123,11 +123,16 @@ def act_jhcj(env, agent, T, Tfi, new_plan):
         agent.a_plan = new_plan
     return agent
 
-
-def act_jhnd(env, agent, T, Tfi):  # 计划拟定
+def act_commit(env, agent, T, Tfi, new_plan):
     assert isinstance(env, Env) and isinstance(agent, Agent)
-    max_area = agent.get_max_area()
-    sample_states = max_area.sample_near(state=max_area.center,
+    assert isinstance(new_plan, Plan)
+    if(uniform(0,1) > 0.5):
+        agent.a_plan = deepcopy(new_plan)
+        agent.a_plan.info['commit'] = True
+    return agent
+
+def _act_jhnd_get_plan(env, agent, aim_area):
+    sample_states = aim_area.sample_near(state=aim_area.center,
                                          sample_num=env.arg['ACT']['jhnd']['sample_num'],
                                          dfs_r=env.arg['ACT']['jhnd']['dfs_r'])
     max_state = None
@@ -136,7 +141,14 @@ def act_jhnd(env, agent, T, Tfi):  # 计划拟定
         t_value = agent.agent_arg['ob'](env.getValue(state))
         if max_state is None or t_value > max_value:
             max_state, max_value = state, t_value
-    new_plan = Plan(goal=max_state, goal_value=max_value, area=max_area)
+    new_plan = Plan(goal=max_state, goal_value=max_value, area=aim_area)
+    return new_plan
+
+
+def act_jhnd(env, agent, T, Tfi):  # 计划拟定
+    assert isinstance(env, Env) and isinstance(agent, Agent)
+    max_area = agent.get_max_area()
+    new_plan = _act_jhnd_get_plan(env, agent, max_area)
     agent.frame_arg['PSM']['m-plan'].append(new_plan)
     agent = act_jhcj(env, agent, T, Tfi, new_plan)
     return agent
