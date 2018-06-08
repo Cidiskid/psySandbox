@@ -54,7 +54,7 @@ class SoclNet:
     def gen_relat_lk_graph(self, lk_func):
         self.relat_lk.clear()
         for u, v in self.relat.edges:
-            if (lk_func(self.relat.edges[u][v])):
+            if lk_func(self.relat.edges[u][v]):
                 self.relat_lk.add_edge(u, v)
         groups = [Group(g) for g in nx.connected_components(self.relat_lk)]
         return groups

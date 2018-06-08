@@ -43,14 +43,20 @@ def init_env_arg(global_arg):
         "max_dist": 3,
         "mask_num": min(5, arg['N'])
     }
-
+    arg['plan'] = {
+        'eval': (lambda dist, trgt: trgt * (1 - 0.1 * (1 - trgt)) ** dist)
+    }
     # 个体可以采取的各项行动，行动本身的参数
     arg['ACT'] = {
         # 行动执行相关参数表
-        'xdzx': {
+        'zyzx': {
             # zyzx自由执行相关参数
             'kT0': 0.01,  # default 0.5
             'cool_down': 0.995,  # default 0.99
+        },
+        'xdzx': {
+            'do_plan_p': (
+                lambda st_val, dist, trgt: 0.5 + 0.5 * tanh(50 * (arg['plan']['eval'](dist, trgt) - st_val)))
         },
         # 获取信息相关参数表
         'hqxx': {
@@ -61,17 +67,17 @@ def init_env_arg(global_arg):
         },
         # 计划拟定相关参数表
         'jhnd': {
-            "sample_num": 50,
+            "sample_num": 30,
             "dfs_r": 0.5
         },
         # 计划决策相关参数表
         'jhjc': {
-            "plan_eval": (lambda aim_value, lenght: aim_value * 0.99 * (len(lenght)))
+            "plan_eval": arg['plan']['eval']
         }
     }
 
     arg['meeting'] = {
-        'xxjl' : {
+        'xxjl': {
             'last_p_t': 32,
             'max_num': 3
         }
@@ -118,9 +124,11 @@ def init_agent_arg(global_arg, env_arg):
     }
     return arg
 
+
 def init_group_arg(global_arg, env_arg, T):
     arg = {}
     return arg
+
 
 def init_stage_arg(global_arg, env_arg, agent_arg, last_arg, T):
     return {}
@@ -132,7 +140,6 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
 
     arg['PSM'] = {
         "f-req": Norm(env_arg['ESM']['f-req'], 0.01 / agent_arg['a']['insight']),
-    # TODO 提问：只是初始值这样获得，是否移动到agent[default][frame]里？
         "p-cplx": Norm(env_arg['ESM']['p-cplx'], 0.01 / agent_arg['a']['insight']),  # 只是初始值这样获得
         "p-ugt": Norm(env_arg['ESM']['p-ugt'], 0.01 / agent_arg['a']['insight']),  # 只是初始值这样获得
         "m-info": deepcopy(last_arg['PSM']['m-info']),  # 新版用法不一样
