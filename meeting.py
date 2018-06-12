@@ -48,7 +48,7 @@ def meeting_tljc(env, agents, member, host, socl_net, T, Tfi):  # 讨论决策
     assert isinstance(member, set) and isinstance(host, set)
     assert host.issubset(member)
 
-    all_max_area = [agents[id].get_max_area(x) for x in host]
+    all_max_area = [agents[x].get_max_area() for x in host]
     max_area = max(all_max_area, key=lambda a: a.info['max'])
     new_plans = [acts._act_jhnd_get_plan(env, agents[x], max_area) for x in host]
 
@@ -57,3 +57,10 @@ def meeting_tljc(env, agents, member, host, socl_net, T, Tfi):  # 讨论决策
     for x in member:
         agents[x] = acts.act_jhcj(env, agents[x], T, Tfi, fin_plan)
     return agents, socl_net
+
+
+meet_map = {
+    "xtfg": meeting_xtfg,
+    "xxjl": meeting_xxjl,
+    "tljc": meeting_tljc
+}

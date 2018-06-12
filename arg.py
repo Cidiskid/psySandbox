@@ -11,9 +11,9 @@ from env import Area
 
 def init_global_arg():
     arg = {
-        'T': 512,  # 模拟总时间
-        "Ts": 512,  # 每个stage的帧数
-        "Nagent": 5  # Agent数量
+        'T': 128,  # 模拟总时间
+        "Ts": 128,  # 每个stage的帧数
+        "Nagent": 10  # Agent数量
     }
     return arg
 
@@ -51,12 +51,12 @@ def init_env_arg(global_arg):
         # 行动执行相关参数表
         'zyzx': {
             # zyzx自由执行相关参数
-            'kT0': 0.01,  # default 0.5
-            'cool_down': 0.995,  # default 0.99
         },
         'xdzx': {
             'do_plan_p': (
-                lambda st_val, dist, trgt: 0.5 + 0.5 * tanh(50 * (arg['plan']['eval'](dist, trgt) - st_val)))
+                lambda st_val, dist, trgt: 0.5 + 0.5 * tanh(50 * (arg['plan']['eval'](dist, trgt) - st_val))),
+            'kT0': 0.01,  # default 0.5
+            'cool_down': 0.995,  # default 0.99
         },
         # 获取信息相关参数表
         'hqxx': {
@@ -82,6 +82,13 @@ def init_env_arg(global_arg):
             'max_num': 3
         }
     }
+    return arg
+
+
+def init_soclnet_arg(global_arg, env_arg):
+    arg = {}
+    arg['Nagent'] = global_arg['Nagent']
+    arg['pow_w2d'] = (lambda x: 1 / (0.01 + x) + 0.01)
     return arg
 
 

@@ -123,13 +123,15 @@ def act_jhcj(env, agent, T, Tfi, new_plan):
         agent.a_plan = new_plan
     return agent
 
+
 def act_commit(env, agent, T, Tfi, new_plan):
     assert isinstance(env, Env) and isinstance(agent, Agent)
     assert isinstance(new_plan, Plan)
-    if(uniform(0,1) > 0.5):
+    if (uniform(0, 1) > 0.5):
         agent.a_plan = deepcopy(new_plan)
         agent.a_plan.info['commit'] = True
     return agent
+
 
 def _act_jhnd_get_plan(env, agent, aim_area):
     sample_states = aim_area.sample_near(state=aim_area.center,

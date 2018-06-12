@@ -31,7 +31,8 @@ class Plan:
                 return state_from.walk(i, -1)
 
     def next_step(self, state):
-        assert not self.is_arrive(state)
+        if self.is_arrive(state):
+            return state
         if self.area.state_in(state):
             return Plan._next_step(state, self.goal)
         else:
@@ -62,7 +63,7 @@ class Agent:
 
     def renew_m_info_list(self, area_list, tfi):
         self.frame_arg["PSM"]['m-info'] += area_list
-        for i in range(len(self.frame_arg["PSM"]['m-info']), -1, -1):
+        for i in range(len(self.frame_arg["PSM"]['m-info']) - 1, -1, -1):
             if self.frame_arg["PSM"]['m-info'][i].info['T_stmp'] < tfi - self.agent_arg['a']['rmb']:
                 del self.frame_arg["PSM"]['m-info'][i]
 
