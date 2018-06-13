@@ -112,7 +112,7 @@ class Area:
         return State.getDist(state, self.center)
 
     def get_mask_num(self):
-        return sum([ int(x) for x in self.mask if int(x) == 1])
+        return sum([int(x) for x in self.mask if int(x) == 1])
 
     def getAllPoint(self):
         logging.debug("start")
@@ -146,7 +146,7 @@ class Area:
                 return False
         return True
 
-# TODO 解释具体原理
+    # TODO 解释具体原理
     def rand_walk(self, state):
         assert isinstance(state, State)
         assert self.state_in(state)
@@ -220,34 +220,40 @@ class Env:
         self.models = {"st": NKmodel(self.N, self.K, self.P),
                        "ed": NKmodel(self.N, self.K, self.P)}
         self.T = arg['T']
+        self.T_clock = 0
         self.ESM = arg['ESM']
 
-    def getValue(self, state, t):
+    def set_clock(self, T):
+        self.T_clock = T
+
+    def getValue(self, state, t=None):
         assert (state.N == self.N and state.P == self.P)
+        if (t is None):
+            t = self.T_clock
         value_st = self.models["st"].getValue(state)
         value_ed = self.models["ed"].getValue(state)
         return value_st + (value_ed - value_st) * t / self.T
 
-    def getAllValue(self, t):
+    def getAllValue(self):
         logging.debug("start")
-        return [self.getValue(State(i), t) for i in range(self.P ** self.N)]
+        return [self.getValue(State(i)) for i in range(self.P ** self.N)]
 
-    def getAllPeakValue(self, t):
+    def getAllPeakValue(self):
         logging.debug("start")
         peak_value = []
         for i in range(self.P ** self.N):
             state = State(i)
-            state_value = self.getValue(state, t)
+            state_value = self.getValue(state)
             flag = False
             for j in range(self.N):
                 for dl in [-1, 1]:
                     state_t = state.walk(j, dl)
-                    if (state_value < self.getValue(state_t, t)):
+                    if (state_value < self.getValue(state_t)):
                         flag = True
                         break
             if (not flag):
                 peak_value.append(state_value)
-        logging.info("Ti: {}, peak num: {}".format(t, len(peak_value)))
+        logging.info("Ti: {}, peak num: {}".format(self.T_clock, len(peak_value)))
         return peak_value
 
     @staticmethod
@@ -258,42 +264,44 @@ class Env:
             "min": all_value[0],
             "avg": sum(all_value) / len(all_value),
             "mid": all_value[len(all_value) // 2],
-            "p0.25": all_value[len(all_value) // 4],
-            "p0.75": all_value[len(all_value) * 3 // 4],
+            "p0.16": all_value[round((len(all_value) - 1) * 0.16)],
+            "p0.84": all_value[round((len(all_value) - 1) * 0.84)]
         }
 
-    def getModelDistri(self, t):
-        return Env._getDistri(self.getAllValue(t))
+    def getModelDistri(self):
+        return Env._getDistri(self.getAllValue())
 
-    def getModelPeakDistri(self, t):
-        return Env._getDistri(self.getAllPeakValue(t))
+    def getModelPeakDistri(self):
+        return Env._getDistri(self.getAllPeakValue())
 
 
-def get_area_sample_value(env, area, sample_num, T, state=None, dfs_r=0.5):
+def get_area_sample_value(env, area, sample_num, state=None, dfs_r=0.5):
     if (state is None):
         state = area.center
     states = area.sample_near(state, sample_num, dfs_r)
-    return [env.getValue(s, T) for s in states]
+    return [env.getValue(s) for s in states]
 
 
-def get_area_sample_distr(env, area, sample_num, T, state=None, dfs_r=0.5):
+def get_area_sample_distr(env, area, sample_num, T_stmp, state=None, dfs_r=0.5):
     if (state is None):
         state = area.center
     logging.debug("start")
-    state_values = get_area_sample_value(env, area, sample_num, T, state, dfs_r)
+    state_values = get_area_sample_value(env, area, sample_num, state, dfs_r)
     all_value = sorted(state_values)
     return {
         "max": all_value[-1],
         "min": all_value[0],
         "avg": sum(all_value) / len(all_value),
         "mid": all_value[len(all_value) // 2],
-        "p0.15": all_value[len(all_value) * 15 // 100],
-        "p0.85": all_value[len(all_value) * 85 // 100],
+        "p0.16": all_value[round((len(all_value) - 1) * 0.16)],
+        "p0.84": all_value[round((len(all_value) - 1) * 0.84)],
+        'T_stmp': T_stmp
     }
 
 
 if (__name__ == "__main__"):
     import numpy as np
+
     all_config.load()
     moniter.LogInit()
     logging.info("Start")
@@ -304,4 +312,4 @@ if (__name__ == "__main__"):
     P = env_arg['P']
     T = env_arg['T']
     env = Env(env_arg)
-    print(env.getModelPeakDistri(0))
+    print(env.getModelPeakDistri())

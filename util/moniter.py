@@ -1,4 +1,4 @@
-from config import all_config
+from util.config import all_config
 import logging
 import time
 import csv
@@ -73,7 +73,7 @@ def DrawHist(nums, label=None):
     plt.show()
 
 def animation_demo():
-    from matplotlib import pyplot as plt
+    import matplotlib.pyplot as plt
     from matplotlib import animation
     import numpy as np
     fig, ax = plt.subplots()

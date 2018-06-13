@@ -11,9 +11,9 @@ from env import Area
 
 def init_global_arg():
     arg = {
-        'T': 512,  # 模拟总时间
-        "Ts": 512,  # 每个stage的帧数
-        "Nagent": 5  # Agent数量
+        'T': 128,  # 模拟总时间
+        "Ts": 128,  # 每个stage的帧数
+        "Nagent": 10  # Agent数量
     }
     return arg
 
@@ -43,32 +43,52 @@ def init_env_arg(global_arg):
         "max_dist": 3,
         "mask_num": min(5, arg['N'])
     }
-
+    arg['plan'] = {
+        'eval': (lambda dist, trgt: trgt * (1 - 0.1 * (1 - trgt)) ** dist)
+    }
     # 个体可以采取的各项行动，行动本身的参数
     arg['ACT'] = {
         # 行动执行相关参数表
-        'xdzx': {
+        'zyzx': {
             # zyzx自由执行相关参数
+        },
+        'xdzx': {
+            'do_plan_p': (
+                lambda st_val, dist, trgt: 0.5 + 0.5 * tanh(50 * (arg['plan']['eval'](dist, trgt) - st_val))),
             'kT0': 0.01,  # default 0.5
             'cool_down': 0.995,  # default 0.99
         },
         # 获取信息相关参数表
         'hqxx': {
-            "mask_n": 2,    # 区域的方向夹角大小，指区域内的点中允许变化的位点数量
-            "dist": 3,      # 区域半径，所有点和中心点的最大距离
-            "dfs_p": 0.5,   # 表示多大概率往深了走
+            "mask_n": 2,  # 区域的方向夹角大小，指区域内的点中允许变化的位点数量
+            "dist": 3,  # 区域半径，所有点和中心点的最大距离
+            "dfs_p": 0.5,  # 表示多大概率往深了走
             "sample_n": 50  # 从区域中抽样的数量
         },
         # 计划拟定相关参数表
         'jhnd': {
-            "sample_num": 50,
+            "sample_num": 30,
             "dfs_r": 0.5
         },
         # 计划决策相关参数表
         'jhjc': {
-            "plan_eval": (lambda aim_value, lenght: aim_value * 0.99 * (len(lenght)))
+            "plan_eval": arg['plan']['eval']
         }
     }
+
+    arg['meeting'] = {
+        'xxjl': {
+            'last_p_t': 32,
+            'max_num': 3
+        }
+    }
+    return arg
+
+
+def init_soclnet_arg(global_arg, env_arg):
+    arg = {}
+    arg['Nagent'] = global_arg['Nagent']
+    arg['pow_w2d'] = (lambda x: 1 / (0.01 + x) + 0.01)
     return arg
 
 
@@ -80,13 +100,13 @@ def init_agent_arg(global_arg, env_arg):
         "act": Norm(0.5, 0.1),  # 行动意愿
         "xplr": Norm(0.5, 0.3),  # 探索倾向
         "xplt": Norm(0.5, 0.3),  # 利用倾向
-        "rmb": 8
+        "rmb": 64
     }
 
     # 适应分数观察值的偏差
     ob_a = 0.01  # default 0.025
-    arg["ob"] = (lambda x: Norm(x, ob_a / arg['a']['insight']))  #原公式，
-#    arg["ob"] = (lambda x: Norm(x, 0.05))  #测试公式
+    arg["ob"] = (lambda x: Norm(x, ob_a / arg['a']['insight']))  # 原公式，
+    #    arg["ob"] = (lambda x: Norm(x, 0.05))  #测试公式
 
     arg['default'] = {
         "stage": {},  # 各种第0个stage的参数放在这里
@@ -112,15 +132,21 @@ def init_agent_arg(global_arg, env_arg):
     return arg
 
 
+def init_group_arg(global_arg, env_arg, T):
+    arg = {}
+    return arg
+
+
 def init_stage_arg(global_arg, env_arg, agent_arg, last_arg, T):
     return {}
+
 
 # 每帧刷新的参数列表
 def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMfi):
     arg = {}
 
     arg['PSM'] = {
-        "f-req": Norm(env_arg['ESM']['f-req'], 0.01 / agent_arg['a']['insight']),  # TODO 提问：只是初始值这样获得，是否移动到agent[default][frame]里？
+        "f-req": Norm(env_arg['ESM']['f-req'], 0.01 / agent_arg['a']['insight']),
         "p-cplx": Norm(env_arg['ESM']['p-cplx'], 0.01 / agent_arg['a']['insight']),  # 只是初始值这样获得
         "p-ugt": Norm(env_arg['ESM']['p-ugt'], 0.01 / agent_arg['a']['insight']),  # 只是初始值这样获得
         "m-info": deepcopy(last_arg['PSM']['m-info']),  # 新版用法不一样
@@ -145,8 +171,8 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     }
     arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0)  # TRUE行动，FALSE不行动
 
-# 以下参与用于确定采取何种行动的过程 TODO 提问：和Brain的关系？
-    arg['ACT'] = {'p':{}}
+    # 以下参与用于确定采取何种行动的过程 TODO 提问：和Brain的关系？
+    arg['ACT'] = {'p': {}}
     # 行动执行的偏好分
     xdzx_a = 0.5
     arg['ACT']['p']['xdzx'] = xdzx_a * last_arg['ACT']['p']['xdzx'] + (1 - xdzx_a) * 0.5  # 行动执行的偏好是常数，为0.5

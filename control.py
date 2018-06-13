@@ -10,6 +10,7 @@ from util.config import all_config
 import logging
 from brain import using_brain
 
+
 class Control:
     def __init__(self):
         self.global_arg = arg.init_global_arg()
@@ -36,7 +37,8 @@ class Control:
         for i in range(len(self.agents)):
             self.agents[i] = using_brain[i](self.main_env,
                                             self.agents[i],
-                                              Ti, Tfi, i)
+                                            Ti, Tfi, i)
+
     # Stage运行过程
     def run_stage(self, Ti, up_info):
         for i in range(len(self.agents)):
@@ -74,7 +76,7 @@ class Control:
                        + [up_info['nkinfo'][key] for key in ['max', 'min', 'mid', 'avg', 'p0.75', 'p0.25']]
             moniter.AppendToCsv(csv_info, all_config['result_csv_path'][-1])
 
-# 实验运行过程
+    # 实验运行过程
     def run_exp(self):
         up_info = {}
 
@@ -97,7 +99,7 @@ class Control:
             #                        'peakmax', 'peakmin', 'peakmid', 'peakavg', 'peak0.75', "peak0.25"]
             moniter.AppendToCsv(csv_head, all_config['result_csv_path'][k])
         csv_head = ['frame'] \
-                   + ["%s%d" % (using_brain[k].func_name,k) for k in range(self.global_arg['Nagent'])] \
+                   + ["%s%d" % (using_brain[k].func_name, k) for k in range(self.global_arg['Nagent'])] \
                    + ["agent_avg"] \
                    + ['nkmax', 'nkmin', 'nkmid', 'nkavg', 'nk0.75', "nk0.25"]
         moniter.AppendToCsv(csv_head, all_config['result_csv_path'][-1])
@@ -115,7 +117,8 @@ class Control:
 if (__name__ == "__main__"):
     import time
     import os
-# 准备工作，初始化实验环境，生成实验结果文件夹等
+
+    # 准备工作，初始化实验环境，生成实验结果文件夹等
     all_config.load()
     moniter.LogInit()
     logging.info("Start")
