@@ -95,13 +95,17 @@ def init_env_arg(global_arg):
 def init_soclnet_arg(global_arg, env_arg):
     arg = {}
     arg['Nagent'] = global_arg['Nagent']
-    arg['pow_w2d'] = (lambda x: 1 / (0.01 + x) + 0.01)  # 权重到距离的转化公式
+
+    # 权重到距离的转化公式 TODO P1-00 可尝试令 dist=1.01-x
+    # networkx自带的Cc算法是归一化的,但normalize by the number of nodes，上述距离定义的最短距为0.01，因此最短距不是(g-1)而是0.01*(g-1)
+    arg['pow_w2d'] = (lambda x: 1 / (0.01 + x) + 0.01)
+
     return arg
 
 
 def init_agent_arg(global_arg, env_arg):
     arg = {}
-    # 个体属性差异
+    # 个体属性差异 TODO P1-04 添加更多类型属性值
     arg['a'] = {
         "insight": clip_rsmp(0.001, 0.999, Norm, mu=0.5, sigma=0.2),  # 环境感知能力
         "act": Norm(0.5, 0.1),  # 行动意愿
@@ -147,6 +151,10 @@ def init_group_arg(global_arg, env_arg, T):
 def init_stage_arg(global_arg, env_arg, agent_arg, last_arg, T):
     return {}
 
+
+# TODO P0-06新增一个数据结构用于存放agent历史节点信息(便于回溯)
+# 可以所有Agent一个总表，单独作为一个实体维护，类似SoclNet，也可以作为Agent的一个数据，类似m_info
+# 主要作用是保存一个时间戳，用于比较跨期行动的绩效
 
 # 每帧刷新的参数列表
 def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMfi):

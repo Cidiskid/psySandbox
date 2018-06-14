@@ -133,6 +133,7 @@ class MulControl:
                        + [sum(agent_value) / len(agent_value)] \
                        + [up_info['nkinfo'][key] for key in ['max', 'min', 'avg']]
             moniter.AppendToCsv(csv_info, all_config['result_csv_path'][-1])
+            # TODO P1-05 增加Socil Network的结果输出
 
     def run_exp(self):
         up_info = {}

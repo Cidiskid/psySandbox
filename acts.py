@@ -8,7 +8,7 @@ from env import Area, get_area_sample_distr, Env
 from util.util import max_choice, norm_softmax
 from agent import Agent, Plan
 
-
+# 已经无效
 def act_zybkyb(env, agent, T, Tfi):
     try_list = sample(range(env.N), env.arg['ACT']['xdzx']['n_near'])
     states = [agent.state_now]
@@ -59,11 +59,14 @@ def act_jhzx(env, agent, T, Tfi):  # 计划执行
     # 已经完成原地不动，在计划路径上移动一步，在计划路径外，向中心点移动
     agent.state_now = agent.a_plan.next_step(agent.state_now)
 
+    # 将现有的点作为一个区域保存
+    # TODO 和获取信息hqxx的区别：sample的结果是客观结果（能否统一？）
     new_area = Area(agent.state_now, [False] * env.N, 0)
     new_area.info = get_area_sample_distr(env=env, area=new_area, state=agent.state_now,
                                           T_stmp=T + Tfi, sample_num=1, dfs_r=1)
     agent.renew_m_info(new_area, T + Tfi)
 
+    # 计划执行完毕后，清空计划
     if agent.a_plan.is_arrive(agent.state_now):
         agent.a_plan = None
     return agent
@@ -105,6 +108,7 @@ def act_hqxx(env, agent, T, Tfi):  # 获取信息
     new_area = Area(state_t, mask_t, env.arg['ACT']['hqxx']['dist'])
 
     # 从区域中取样，获取信息，目前支持Max，Min,Avg,Mid,p0.15,p0.85
+    # TODO P1-03 考虑改为OB值而不是客观值？
     new_area.info = get_area_sample_distr(env=env, area=new_area, T_stmp=T + Tfi, state=agent.state_now,
                                           sample_num=env.arg['ACT']['hqxx']['sample_n'],
                                           dfs_r=env.arg['ACT']['hqxx']['dfs_p'])
@@ -122,16 +126,27 @@ def act_jhjc(env, agent, T, Tfi, new_plan):
         org_plan_value = env.arg['ACT']['jhjc']["plan_eval"](agent.a_plan.goal_value,
                                                              agent.a_plan.len_to_finish(agent.state_now))
     if new_plan_value >= org_plan_value:
+        # TODO P0-07 在覆盖新计划前对旧计划的执行情况进行判断并据此更新SoclNet.power
+        # not a_plan is None，不为空
+        # 提取plan.info中的owner,commit和时间,见P0-08，提取当前时间和计划采纳时间时的适应分数
+        # 若commit=ture，对owner的power按权重更新，更新数值与适应分数差有关，具体见文档
+        # 若commit=false，更新"自信度"power[i][i]
+
+        # TODO P0-07 为new_plan添加采纳时间戳信息
         agent.a_plan = new_plan
+
     return agent
 
-
+# TODO P0-03 修改commit的原理，参照文档
 def act_commit(env, agent, T, Tfi, new_plan):
     assert isinstance(env, Env) and isinstance(agent, Agent)
     assert isinstance(new_plan, Plan)
     # 50% 的概率接受一个plan，并且commit
     if (uniform(0, 1) > 0.5):
+        # TODO P0-07 同上，覆盖计划前对原计划执行情况进行比较
         agent.a_plan = deepcopy(new_plan)
+
+        # TODO P0-07 为new_plan添加采纳时间戳信息
         agent.a_plan.info['commit'] = True
     return agent
 

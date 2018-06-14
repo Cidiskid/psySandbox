@@ -13,7 +13,7 @@ class Plan:
         self.goal = goal
         self.goal_value = goal_value
         self.area = area
-        self.info = {}
+        self.info = {}  # TODO P0-08 添加采纳时间戳和owner信息
 
     def is_arrive(self, state):
         assert isinstance(state, State)

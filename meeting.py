@@ -27,7 +27,9 @@ def meeting_xtfg(env, agents, member, host, socl_net, T, Tfi):  # 协调分工
 
     for x in member:
         to_commit = plan_pool[random_choice(sample_pool)]['plan']
-        agents[x] = acts.act_commit(env, agents[x], T, Tfi, to_commit)  # TODO 修改接口
+        agents[x] = acts.act_commit(env, agents[x], T, Tfi, to_commit)  # TODO P0-03,修改接口
+
+    # TODO P0-05 增加协调分工后对soclnet的更新过程，见文档
 
     return agents, socl_net
 
@@ -43,6 +45,8 @@ def meeting_xxjl(env, agents, member, host, socl_net, T, Tfi):  # 信息交流
                                                 env.arg['meeting']['xxjl']['max_num'])
     for x in member:
         agents[x].renew_m_info_list(ret_info, T + Tfi)
+
+    # TODO P0-05 同上
     return agents, socl_net
 
 
@@ -60,6 +64,8 @@ def meeting_tljc(env, agents, member, host, socl_net, T, Tfi):  # 讨论决策
 
     for x in member:
         agents[x] = acts.act_jhjc(env, agents[x], T, Tfi, fin_plan)
+
+    # TODO P0-05 同上
     return agents, socl_net
 
 

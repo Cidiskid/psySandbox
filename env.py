@@ -146,7 +146,7 @@ class Area:
                 return False
         return True
 
-    # TODO 解释具体原理
+
     def rand_walk(self, state):
         assert isinstance(state, State)
         assert self.state_in(state)
@@ -280,7 +280,7 @@ def get_area_sample_value(env, area, sample_num, state=None, dfs_r=0.5):
     if (state is None):
         state = area.center
     states = area.sample_near(state, sample_num, dfs_r)
-    return [env.getValue(s) for s in states]
+    return [env.getValue(s) for s in states]  # TODO P1-03 考虑改为OB值而不是客观值？要把agent传进来？
 
 
 def get_area_sample_distr(env, area, sample_num, T_stmp, state=None, dfs_r=0.5):
