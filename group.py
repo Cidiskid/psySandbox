@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 import arg
 import util.moniter
 from util.config import all_config
@@ -36,6 +37,7 @@ class SoclNet:
         self.random_init_relation()
         self.random_init_power()
 
+    # 初始关系数值为0.5加随机扰动
     def flat_init(self):
         for i in self.relat.node():
             for j in range(i):

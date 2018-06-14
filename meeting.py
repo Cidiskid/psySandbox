@@ -14,6 +14,7 @@ def meeting_xtfg(env, agents, member, host, socl_net, T, Tfi):  # 协调分工
     assert host.issubset(member)
     cent_weigh = socl_net.get_power_close_centrality()
     plan_pool = []
+    # 获取所有host加权后的计划得分的比值
     for x in host:
         if not agents[x].a_plan is None:
             plan_v = env.arg['plan']['eval'](agents[x].a_plan.len_to_finish(agents[x].a_plan.area.center),
@@ -26,7 +27,7 @@ def meeting_xtfg(env, agents, member, host, socl_net, T, Tfi):  # 协调分工
 
     for x in member:
         to_commit = plan_pool[random_choice(sample_pool)]['plan']
-        agents[x] = acts.act_commit(env, agents[x], T, Tfi, to_commit)
+        agents[x] = acts.act_commit(env, agents[x], T, Tfi, to_commit)  # TODO 修改接口
 
     return agents, socl_net
 
@@ -36,6 +37,7 @@ def meeting_xxjl(env, agents, member, host, socl_net, T, Tfi):  # 信息交流
     assert isinstance(host, set) and isinstance(member, set)
     assert host.issubset(member)
     ret_info = []
+    # TODO P0-01 先让非host执行一次获取信息的行动，避免没有新信息
     for x in member:
         ret_info += agents[x].get_latest_m_info(env.arg['meeting']['xxjl']['last_p_t'],
                                                 env.arg['meeting']['xxjl']['max_num'])
@@ -47,20 +49,22 @@ def meeting_xxjl(env, agents, member, host, socl_net, T, Tfi):  # 信息交流
 def meeting_tljc(env, agents, member, host, socl_net, T, Tfi):  # 讨论决策
     assert isinstance(member, set) and isinstance(host, set)
     assert host.issubset(member)
-
+    # host的max_area中，最好的区域用于制定计划
     all_max_area = [agents[x].get_max_area() for x in host]
     max_area = max(all_max_area, key=lambda a: a.info['max'])
-    new_plans = [acts._act_jhnd_get_plan(env, agents[x], max_area) for x in host]
 
-    fin_plan = max(new_plans, key=lambda plan: plan.goal_value)
+    new_plans = [acts._act_jhnd_get_plan(env, agents[x], max_area) for x in member]  # byCid TODO P0-02 希望所有人都参与计划拟定
+    # new_plans = [acts._act_jhnd_get_plan(env, agents[x], max_area) for x in host]
+
+    fin_plan = max(new_plans, key=lambda plan: plan.goal_value)  # 仅根据goal_value排序，不考虑距离
 
     for x in member:
-        agents[x] = acts.act_jhcj(env, agents[x], T, Tfi, fin_plan)
+        agents[x] = acts.act_jhjc(env, agents[x], T, Tfi, fin_plan)
     return agents, socl_net
 
 
 meet_map = {
-    "xtfg": meeting_xtfg,
-    "xxjl": meeting_xxjl,
-    "tljc": meeting_tljc
+    "xtfg": meeting_xtfg,   # 协调分工
+    "xxjl": meeting_xxjl,   # 信息交流
+    "tljc": meeting_tljc    # 讨论决策
 }

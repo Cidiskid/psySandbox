@@ -37,7 +37,7 @@ def act_zyzx(env, agent, T, Tfi):
 
     cd = env.arg['ACT']['xdzx']['cool_down']
     # cd = env.arg['ACT']['xdzx']['cool_down'] ** (env.arg['P'] ** (env.arg['N'] - inter_area_mskn))
-    # 随着时间推移，容忍度越来越低 TODO 调整行动逻辑
+    # 随着时间推移，容忍度越来越低
     fake_stage = 16  # 静态测试时，fake一个stage的分隔
     cd_T = Tfi
     tol = kT0 * cd ** cd_T  # 容忍度
@@ -56,6 +56,7 @@ def act_zyzx(env, agent, T, Tfi):
 
 def act_jhzx(env, agent, T, Tfi):  # 计划执行
     assert isinstance(agent.a_plan, Plan)
+    # 已经完成原地不动，在计划路径上移动一步，在计划路径外，向中心点移动
     agent.state_now = agent.a_plan.next_step(agent.state_now)
 
     new_area = Area(agent.state_now, [False] * env.N, 0)
@@ -71,6 +72,7 @@ def act_jhzx(env, agent, T, Tfi):  # 计划执行
 # 行动执行，T代表该stage第一帧的时间戳，Tfi表示该帧的相对偏移（本stage的第几帧）
 def act_xdzx(env, agent, T, Tfi):
     assert isinstance(env, Env) and isinstance(agent, Agent)
+    # 如果没计划就自由执行zyzx
     if agent.a_plan is None:
         return act_zyzx(env, agent, T, Tfi)
     assert isinstance(agent.a_plan, Plan)
@@ -111,7 +113,7 @@ def act_hqxx(env, agent, T, Tfi):  # 获取信息
     return agent
 
 
-def act_jhcj(env, agent, T, Tfi, new_plan):
+def act_jhjc(env, agent, T, Tfi, new_plan):
     assert isinstance(env, Env) and isinstance(agent, Agent)
     new_plan_value = env.arg['ACT']['jhjc']["plan_eval"](new_plan.goal_value,
                                                          new_plan.len_to_finish(agent.state_now))
@@ -127,6 +129,7 @@ def act_jhcj(env, agent, T, Tfi, new_plan):
 def act_commit(env, agent, T, Tfi, new_plan):
     assert isinstance(env, Env) and isinstance(agent, Agent)
     assert isinstance(new_plan, Plan)
+    # 50% 的概率接受一个plan，并且commit
     if (uniform(0, 1) > 0.5):
         agent.a_plan = deepcopy(new_plan)
         agent.a_plan.info['commit'] = True
@@ -152,5 +155,5 @@ def act_jhnd(env, agent, T, Tfi):  # 计划拟定
     max_area = agent.get_max_area()
     new_plan = _act_jhnd_get_plan(env, agent, max_area)
     agent.frame_arg['PSM']['m-plan'].append(new_plan)
-    agent = act_jhcj(env, agent, T, Tfi, new_plan)
+    agent = act_jhjc(env, agent, T, Tfi, new_plan)
     return agent

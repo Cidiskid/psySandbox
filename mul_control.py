@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 import logging
 import arg
 from group import Group, SoclNet
@@ -12,9 +13,11 @@ from util import moniter
 
 class MulControl:
     def __init__(self):
+        # 环境初始化
         self.global_arg = arg.init_global_arg()
         env_arg = arg.init_env_arg(self.global_arg)
         self.main_env = Env(env_arg)
+        # 个体初始化
         self.agents = []
         state_start = State([0] * self.main_env.N)
         for i in range(self.global_arg["Nagent"]):
@@ -22,11 +25,13 @@ class MulControl:
                                                         self.main_env.arg),
                                      self.main_env))
             self.agents[i].state_now = deepcopy(state_start)
+        # 社会网络初始化
         soclnet_arg = arg.init_soclnet_arg(self.global_arg, env_arg)
         self.socl_net = SoclNet(soclnet_arg)
         self.socl_net.flat_init()
 
     def run_meet_frame(self, Ti, Tfi, meet_name, member, host, up_info):
+        # 根据m_name开会
         self.agents, self.socl_net = meeting.meet_map[meet_name](env=self.main_env,
                                                                  agents=self.agents,
                                                                  member=member,
@@ -35,7 +40,7 @@ class MulControl:
                                                                  T=Ti, Tfi=Tfi)
 
     def run_all_frame(self, Ti, Tfi, meet_req, up_info):
-        # 将每个Agent的中间状态初始化
+        # 将每个Agent上一帧的初始拷贝进来
         for i in range(len(self.agents)):
             last_arg = deepcopy(self.agents[i].frame_arg)
             # logging.debug("agent %d, %s"%(i,"{}".format(self.agents[i].frame_arg)))
@@ -48,17 +53,30 @@ class MulControl:
                 Tp=Ti,
                 PSMfi=self.main_env.getValue(self.agents[i].state_now, Ti)
             )
+
+        # 读取之前发起的集体行动
         all_host = set()
         all_meet_info = {}
         new_meet_req = {}
+        # 把每一种meeting的host先集中起来，并加入到对应的meet_info中
+        # meet_req的结构大致如下？
+        # meet_req={
+        #    "m_name1":{agent}
+        #    "m_name2":{agent}
+        # }
+        # m_name是指信息交流xxjl之类的集体行动名称
+
         for m_name in meet_req:
             all_host = all_host.union(meet_req[m_name])
             all_meet_info[m_name] = {"member": meet_req[m_name],
                                      "host": meet_req[m_name]}
+        # 询问每个Agent是否加入
         for i in range(len(self.agents)):
             #            logging.debug("all_host:{}".format(all_host))
+            # 跳过所有host
             if i in all_host:
                 continue
+            # 返回是否参与集体行动的信息，如果不参与，执行完个体行动，如果参与,进入后续run_meet_frame
             self.agents[i], meet_info = brain.mul_agent_act(env=self.main_env,
                                                             soc_net=self.socl_net,
                                                             agent=self.agents[i],
@@ -66,12 +84,15 @@ class MulControl:
                                                             meet_req=meet_req)
             if meet_info is None:
                 continue
+            # 选择参加会议，则加入会议名单
             if meet_info['type'] == 'commit':
                 all_meet_info[meet_info['name']]["member"].add(i)
+            # 选择发起新会议
             if meet_info['type'] == 'req':
                 if not meet_info['name'] in new_meet_req:
                     new_meet_req[meet_info['name']] = set()
                 new_meet_req[meet_info['name']].add(i)
+        # 每个host都选完人之后，依次开会
         for m_name in all_meet_info:
             self.run_meet_frame(Ti, Tfi, m_name,
                                 all_meet_info[m_name]['member'],
@@ -80,6 +101,7 @@ class MulControl:
         return new_meet_req
 
     def run_stage(self, Ti, up_info):
+        # 将Agent上一个stage的最终状态拷贝过来
         for i in range(len(self.agents)):
             last_arg = deepcopy(self.agents[i].stage_arg)
             self.agents[i].stage_arg = arg.init_stage_arg(self.global_arg,
@@ -91,9 +113,10 @@ class MulControl:
         for i in range(self.global_arg['Ts']):
             logging.info("frame %3d , Ti:%3d" % (i, Ti))
 
-            # 运行Frame
+            # 运行Frame， 并将运行后生成的会议请求记录下来
             meet_req = self.run_all_frame(Ti, i, meet_req, up_info)
 
+            # 将信息添加到各个结果CSV中
             for k in range(self.global_arg["Nagent"]):
                 csv_info = [
                     Ti + i,
@@ -114,9 +137,11 @@ class MulControl:
     def run_exp(self):
         up_info = {}
 
+        # 单个agent的结果文档
         for k in range(self.global_arg["Nagent"]):
             csv_head = ['frame', 'SSMfi', 'nkmax', 'nkmin', 'nkavg']
             moniter.AppendToCsv(csv_head, all_config['result_csv_path'][k])
+        # 汇总结果文档
         csv_head = ['frame'] \
                    + ["agent%d" % (k) for k in range(self.global_arg['Nagent'])] \
                    + ["agent_avg"] \
@@ -128,6 +153,7 @@ class MulControl:
             Ti = i * self.global_arg['Ts'] + 1
             logging.info("stage %3d, Ti:%3d" % (i, Ti))
             self.main_env.T_clock = Ti
+            # 每个stage遍历一遍当前模型，获取分布信息
             up_info['nkinfo'] = self.main_env.getModelDistri()
             # 运行一个Stage，Ti表示每个Stage的第一帧
             self.run_stage(Ti, up_info)

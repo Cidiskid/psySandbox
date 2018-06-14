@@ -226,6 +226,7 @@ class Env:
     def set_clock(self, T):
         self.T_clock = T
 
+    # 动态过程的实现，通过getValue改变
     def getValue(self, state, t=None):
         assert (state.N == self.N and state.P == self.P)
         if (t is None):
@@ -264,8 +265,8 @@ class Env:
             "min": all_value[0],
             "avg": sum(all_value) / len(all_value),
             "mid": all_value[len(all_value) // 2],
-            "p0.16": all_value[round((len(all_value) - 1) * 0.16)],
-            "p0.84": all_value[round((len(all_value) - 1) * 0.84)]
+            "p0.16": all_value[int(round((len(all_value) - 1) * 0.16))],
+            "p0.84": all_value[int(round((len(all_value) - 1) * 0.84))]
         }
 
     def getModelDistri(self):
@@ -293,8 +294,8 @@ def get_area_sample_distr(env, area, sample_num, T_stmp, state=None, dfs_r=0.5):
         "min": all_value[0],
         "avg": sum(all_value) / len(all_value),
         "mid": all_value[len(all_value) // 2],
-        "p0.16": all_value[round((len(all_value) - 1) * 0.16)],
-        "p0.84": all_value[round((len(all_value) - 1) * 0.84)],
+        "p0.16": all_value[int(round((len(all_value) - 1) * 0.16))],
+        "p0.84": all_value[int(round((len(all_value) - 1) * 0.84))],
         'T_stmp': T_stmp
     }
 

@@ -33,19 +33,23 @@ def init_env_arg(global_arg):
         "f-req": 0.75,  # 适应要求，及格线
         "p-cplx": 1 - 0.75 / (1 + exp(arg['K'] - 5)),
         # (lambda Tp: 1 - 0.75 ** (1.0 * global_arg['T'] / Tp) / (1 + exp(arg['K'] - 5))),
-        # TODO 修改公式
+
         "p-ugt": (1 - tanh(0.1 * (global_arg['Ts'] - 32))) * 0.5
     }
 
     # 区域相关参数，代表目标
     arg['area'] = {
-        "sample_num": 100,
-        "max_dist": 3,
-        "mask_num": min(5, arg['N'])
+        "sample_num": 100,  # 抽样个数
+        "max_dist": 3,  # 游走距离
+        "mask_num": min(5, arg['N'])  # 可移动的位点限制
     }
+
+    plan_a = 0.1  # 距离对计划得分影响系数
     arg['plan'] = {
-        'eval': (lambda dist, trgt: trgt * (1 - 0.1 * (1 - trgt)) ** dist)
+        # 计划得分
+        'eval': (lambda dist, trgt: trgt * (1 - plan_a * (1 - trgt)) ** dist)
     }
+
     # 个体可以采取的各项行动，行动本身的参数
     arg['ACT'] = {
         # 行动执行相关参数表
@@ -53,6 +57,7 @@ def init_env_arg(global_arg):
             # zyzx自由执行相关参数
         },
         'xdzx': {
+            # 执行计划的概率
             'do_plan_p': (
                 lambda st_val, dist, trgt: 0.5 + 0.5 * tanh(50 * (arg['plan']['eval'](dist, trgt) - st_val))),
             'kT0': 0.01,  # default 0.5
@@ -76,19 +81,21 @@ def init_env_arg(global_arg):
         }
     }
 
+    # 集体行动相关参数表
     arg['meeting'] = {
         'xxjl': {
-            'last_p_t': 32,
+            'last_p_t': 32,  #
             'max_num': 3
         }
     }
     return arg
 
 
+# 社会网络相关参数
 def init_soclnet_arg(global_arg, env_arg):
     arg = {}
     arg['Nagent'] = global_arg['Nagent']
-    arg['pow_w2d'] = (lambda x: 1 / (0.01 + x) + 0.01)
+    arg['pow_w2d'] = (lambda x: 1 / (0.01 + x) + 0.01)  # 权重到距离的转化公式
     return arg
 
 
@@ -105,7 +112,7 @@ def init_agent_arg(global_arg, env_arg):
 
     # 适应分数观察值的偏差
     ob_a = 0.01  # default 0.025
-    arg["ob"] = (lambda x: Norm(x, ob_a / arg['a']['insight']))  # 原公式，
+    arg["ob"] = (lambda x: Norm(x, ob_a / arg['a']['insight']))  # default公式，
     #    arg["ob"] = (lambda x: Norm(x, 0.05))  #测试公式
 
     arg['default'] = {
@@ -120,7 +127,7 @@ def init_agent_arg(global_arg, env_arg):
                 's-sc': 0
             },
             # 行动偏好参数
-            'ACT': {  # TODO 提问：和Brain的关系？
+            'ACT': {
                 'p': {
                     'xdzx': 1,  # 行动执行
                     'hqxx': 0,  # 获取信息
@@ -171,7 +178,7 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     }
     arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0)  # TRUE行动，FALSE不行动
 
-    # 以下参与用于确定采取何种行动的过程 TODO 提问：和Brain的关系？
+    # 以下参与用于确定采取何种行动的过程
     arg['ACT'] = {'p': {}}
     # 行动执行的偏好分
     xdzx_a = 0.5
@@ -191,7 +198,7 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     h3 = 2 + tanh(5 * (arg["PSM"]['p-ugt'] - 1))
     jhnd_a = 0.5
     arg['ACT']['p']['jhnd'] = jhnd_a * last_arg['ACT']['p']['jhnd'] + (1 - jhnd_a) * f3 * g3 * h3
-    if (len(arg['PSM']['m-plan']) < 1):  # TODO 提问：函数的意思是？好像是老版本定义，需要修改。如果没有当前计划，计划拟定的权重为0
+    if (len(arg['PSM']['m-plan']) < 1):
         arg['ACT']['p']['jhnd'] = 0
 
     arg['ACT']['choice'] = random_choice(softmaxM1(arg['ACT']['p']))

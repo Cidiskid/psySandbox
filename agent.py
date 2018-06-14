@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 import logging
 from copy import deepcopy
 from env import State, Area, Env, get_area_sample_distr
@@ -62,7 +63,9 @@ class Agent:
         self.a_plan = None
 
     def renew_m_info_list(self, area_list, tfi):
+        # 加入新信息
         self.frame_arg["PSM"]['m-info'] += area_list
+        # 清空旧的信息
         for i in range(len(self.frame_arg["PSM"]['m-info']) - 1, -1, -1):
             if self.frame_arg["PSM"]['m-info'][i].info['T_stmp'] < tfi - self.agent_arg['a']['rmb']:
                 del self.frame_arg["PSM"]['m-info'][i]
