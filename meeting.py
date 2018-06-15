@@ -21,15 +21,19 @@ def meeting_xtfg(env, agents, member, host, socl_net, T, Tfi):  # 协调分工
                                              agents[x].a_plan.goal_value)
             plan_pool.append({"id": x,
                               "plan": agents[x].a_plan,
-                              "weight": cent_weigh[x] * plan_v})
+                              "weight": cent_weigh[x] * plan_v})  # TODO notes: 此处的x和SoclNet的Key是否一样？
     w_sum = sum([pair['weight'] for pair in plan_pool])
     sample_pool = [plan_pool[i]['weight'] / w_sum for i in range(len(plan_pool))]
 
     for x in member:
         to_commit = plan_pool[random_choice(sample_pool)]['plan']
+        # TODO notes:传入plan owner id，commit概率, commit概率暂定power[owner][x]，建议lambda回传一下
         agents[x] = acts.act_commit(env, agents[x], T, Tfi, to_commit)  # TODO P0-03,修改接口
 
     # TODO P0-05 增加协调分工后对soclnet的更新过程，见文档
+    # for u in member:
+    #    for v in range(u):
+    #        socl_net.relat[u][v]= agents[u].agent_arg['re_incr_g'](socl_net.relat[u][v])
 
     return agents, socl_net
 
@@ -46,7 +50,8 @@ def meeting_xxjl(env, agents, member, host, socl_net, T, Tfi):  # 信息交流
     for x in member:
         agents[x].renew_m_info_list(ret_info, T + Tfi)
 
-    # TODO P0-05 同上
+    # TODO P0-05 同上增强
+
     return agents, socl_net
 
 
@@ -65,12 +70,13 @@ def meeting_tljc(env, agents, member, host, socl_net, T, Tfi):  # 讨论决策
     for x in member:
         agents[x] = acts.act_jhjc(env, agents[x], T, Tfi, fin_plan)
 
-    # TODO P0-05 同上
+    # TODO P0-05 同上增强
+
     return agents, socl_net
 
 
 meet_map = {
-    "xtfg": meeting_xtfg,   # 协调分工
-    "xxjl": meeting_xxjl,   # 信息交流
-    "tljc": meeting_tljc    # 讨论决策
+    "xtfg": meeting_xtfg,  # 协调分工
+    "xxjl": meeting_xxjl,  # 信息交流
+    "tljc": meeting_tljc  # 讨论决策
 }

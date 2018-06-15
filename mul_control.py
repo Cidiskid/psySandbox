@@ -84,7 +84,7 @@ class MulControl:
                                                             meet_req=meet_req)
             if meet_info is None:
                 continue
-            # 选择参加会议，则加入会议名单
+            # 选择参加会议，则加入会议名单 TODO notes:为了不和协调分工搞混，这里的commit是否考虑改为accept？
             if meet_info['type'] == 'commit':
                 all_meet_info[meet_info['name']]["member"].add(i)
             # 选择发起新会议

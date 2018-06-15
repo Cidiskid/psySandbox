@@ -119,6 +119,20 @@ def init_agent_arg(global_arg, env_arg):
     arg["ob"] = (lambda x: Norm(x, ob_a / arg['a']['insight']))  # default公式，
     #    arg["ob"] = (lambda x: Norm(x, 0.05))  #测试公式
 
+    # TODO notes: P0-05的更新公式，请refine
+    # incr_rate = 0.05  # 关系增加速率
+    # arg["re_incr_g"] = (lambda old_re: (1 - incr_rate) * old_re + incr_rate)  # 表示general的increase，在参加完任意一次集体活动后被调用
+
+    # TODO notes: P0-07的更新公式，请refine,感觉需要包一层
+    arg['dP_r'] = {
+        "other": 0.2,  # 对他人给的计划变化幅度更大
+        "self": 0.1  # 对自己的计划变化幅度较小（效能提升小）
+    }
+    dP_s = 100  # 对变化的敏感度
+    arg["dPower"] = (lambda dF, dP_r: dP_r * tanh(dP_s * dF))
+
+    arg["pwr_updt_g"] = (lambda old_pwr, dP: (1 - abs(dP)) * old_pwr + 0.5 * (dP + abs(dP)))
+
     arg['default'] = {
         "stage": {},  # 各种第0个stage的参数放在这里
         "frame": {  # 各种第0帧的参数放在这里
@@ -186,13 +200,37 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     }
     arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0)  # TRUE行动，FALSE不行动
 
-    # 以下参与用于确定采取何种行动的过程
+    # 以下参数用于确定采取何种行动的过程
     arg['ACT'] = {'p': {}}
-    # 行动执行的偏好分
+    # TODO P0-04 确定所有行动偏好'odds'的函数，需要在brain中调用，请refine
+    arg['ACT'] = {'odds': {}}
+    # 行动执行的偏好分(1-3), default = 2
+    xdzx_c = 2  # 行动执行偏好常数
+    xdzx_r = 1  # 行动执行随dF变化的最大幅度
+    arg['ACT']['odds']['xdzx'] = (
+        lambda dF: xdzx_c + 1 * (1 + xdzx_r * tanh(100 * dF)))  # dF是Max_are.info['max']-state_now.getValue的差
+    # 获取信息的偏好分(0.5,1.5), default = 1
+    xxhq_c = 0  # 信息获取偏好常数
+    arg['ACT']['odds']['xxhq'] = (lambda x: xxhq_c + 1 * (0.5 + agent_arg['a']['xplr']) + x * 0)  # 需要传啥没想好，但大概率后面是要传其他的
+    # 计划决策的偏好分(0.25,1.5*1.5) default = 1
+    jhjc_c = 0
+    jhjc_r = 0.5  # 计划决策随dF变化的最大幅度
+    arg['ACT']['odds']['jhjc'] = (
+        lambda dF: jhjc_c + 1 * (0.5 + agent_arg['a']['xplt']) * (1 + jhjc_r * tanh(100 * dF)))  # 需要传啥没想好，但大概率后面是要传其他的
+    # 维护联结的偏好分(0.5,1)
+    whlj_c = 0
+    arg['ACT']['odds']['whlj'] = (lambda x: whlj_c + 1 * (0.5 + agent_arg['a']['enable']) + x * 0)
+    # 定义角色的偏好分(0.5,1)
+    dyjs_c = 0
+    arg['ACT']['odds']['dyjs'] = (lambda x: dyjs_c + 1 * (0.5 + agent_arg['a']['enable']) + x * 0)
+    # 调节状态的偏好分(0.5,1)
+    tjzt_c = 0
+    arg['ACT']['odds']['tjzt'] = (lambda x: tjzt_c + 1 * (0.5 + agent_arg['a']['enable']) + x * 0)
+
+    # 以下为老的代码部分
     xdzx_a = 0.5
     arg['ACT']['p']['xdzx'] = xdzx_a * last_arg['ACT']['p']['xdzx'] + (1 - xdzx_a) * 0.5  # 行动执行的偏好是常数，为0.5
 
-    # 获取信息的偏好分
     hqxx_a = 0.5
     f2 = 1 - tanh(10 * (last_arg['PSM']['s-sc'] - 0.8 * arg['PSM']['f-req']))
     g2 = 1 + 0.2 * tanh(5 * (agent_arg['a']['xplr'] - 0.5))
@@ -200,7 +238,6 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     l2 = 1 + 0.2 * tanh(5 * (arg['PSM']['p-cplx'] - 0.5))
     arg['ACT']['p']['hqxx'] = hqxx_a * last_arg['ACT']['p']['hqxx'] + (1 - hqxx_a) * f2 * g2 * h2 * l2
 
-    # 计划拟定的偏好分
     f3 = 1 + tanh(5 * (last_arg['PSM']['s-sc'] - 0.8 * arg['PSM']['f-req']))
     g3 = 1 + 0.2 * tanh(5 * (agent_arg['a']['xplt'] - 0.5))
     h3 = 2 + tanh(5 * (arg["PSM"]['p-ugt'] - 1))

@@ -60,7 +60,7 @@ def act_jhzx(env, agent, T, Tfi):  # 计划执行
     agent.state_now = agent.a_plan.next_step(agent.state_now)
 
     # 将现有的点作为一个区域保存
-    # TODO 和获取信息hqxx的区别：sample的结果是客观结果（能否统一？）
+    # TODO P1-00和获取信息hqxx的区别：sample的结果是客观结果（能否统一？）
     new_area = Area(agent.state_now, [False] * env.N, 0)
     new_area.info = get_area_sample_distr(env=env, area=new_area, state=agent.state_now,
                                           T_stmp=T + Tfi, sample_num=1, dfs_r=1)
@@ -131,6 +131,9 @@ def act_jhjc(env, agent, T, Tfi, new_plan):
         # 提取plan.info中的owner,commit和时间,见P0-08，提取当前时间和计划采纳时间时的适应分数
         # 若commit=ture，对owner的power按权重更新，更新数值与适应分数差有关，具体见文档
         # 若commit=false，更新"自信度"power[i][i]
+        # TODO notes: 请refine, 似乎需要传一个socl_net进来,才能update plan owner和agent的关系
+        # dF = env.getValue(agent.state_now, T) - FS[agent.a_plan.info['acpt_time']][value]
+
 
         # TODO P0-07 为new_plan添加采纳时间戳信息
         agent.a_plan = new_plan
@@ -141,9 +144,11 @@ def act_jhjc(env, agent, T, Tfi, new_plan):
 def act_commit(env, agent, T, Tfi, new_plan):
     assert isinstance(env, Env) and isinstance(agent, Agent)
     assert isinstance(new_plan, Plan)
+    # TODO notes: 传入一个commit概率，如果commit，将owner信息添加到new_plan中
+
     # 50% 的概率接受一个plan，并且commit
     if (uniform(0, 1) > 0.5):
-        # TODO P0-07 同上，覆盖计划前对原计划执行情况进行比较
+        # TODO P0-07 同上，覆盖计划前对原计划执行情况进行比较，并更新power
         agent.a_plan = deepcopy(new_plan)
 
         # TODO P0-07 为new_plan添加采纳时间戳信息
@@ -167,7 +172,7 @@ def _act_jhnd_get_plan(env, agent, aim_area):
 
 def act_jhnd(env, agent, T, Tfi):  # 计划拟定
     assert isinstance(env, Env) and isinstance(agent, Agent)
-    max_area = agent.get_max_area()
+    max_area = agent.get_max_area() # TODO notes: 会不会get到一个过去的点？到达过局部最优后，不停生成回到这个点的计划
     new_plan = _act_jhnd_get_plan(env, agent, max_area)
     agent.frame_arg['PSM']['m-plan'].append(new_plan)
     agent = act_jhjc(env, agent, T, Tfi, new_plan)
