@@ -200,10 +200,11 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     }
     arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0)  # TRUE行动，FALSE不行动
 
-    # 以下参数用于确定采取何种行动的过程
-    arg['ACT'] = {'p': {}}
     # TODO P0-04 确定所有行动偏好'odds'的函数，需要在brain中调用，请refine
-    arg['ACT'] = {'odds': {}}
+    arg['ACT'] = {
+        'odds': {},
+        'p':{}
+    }
     # 行动执行的偏好分(1-3), default = 2
     xdzx_c = 2  # 行动执行偏好常数
     xdzx_r = 1  # 行动执行随dF变化的最大幅度
@@ -228,6 +229,7 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     arg['ACT']['odds']['tjzt'] = (lambda x: tjzt_c + 1 * (0.5 + agent_arg['a']['enable']) + x * 0)
 
     # 以下为老的代码部分
+    # 以下参数用于确定采取何种行动的过程
     xdzx_a = 0.5
     arg['ACT']['p']['xdzx'] = xdzx_a * last_arg['ACT']['p']['xdzx'] + (1 - xdzx_a) * 0.5  # 行动执行的偏好是常数，为0.5
 
