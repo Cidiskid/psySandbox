@@ -156,6 +156,7 @@ class MulControl:
             self.main_env.T_clock = Ti
             # 每个stage遍历一遍当前模型，获取分布信息
             up_info['nkinfo'] = self.main_env.getModelDistri()
+            logging.debug("max_value:{max}".format(**up_info['nkinfo']))
             # 运行一个Stage，Ti表示每个Stage的第一帧
             self.run_stage(Ti, up_info)
 

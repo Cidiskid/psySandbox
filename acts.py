@@ -68,6 +68,8 @@ def act_jhzx(env, agent, T, Tfi):  # 计划执行
 
     # 计划执行完毕后，清空计划
     if agent.a_plan.is_arrive(agent.state_now):
+        # TODO P0-07
+
         agent.a_plan = None
     return agent
 

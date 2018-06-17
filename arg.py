@@ -12,8 +12,9 @@ from env import Area
 def init_global_arg():
     arg = {
         'T': 128,  # 模拟总时间
-        "Ts": 128,  # 每个stage的帧数
-        "Nagent": 10  # Agent数量
+        "Ts": 16,  # 每个stage的帧数
+        "Nagent": 10,  # Agent数量
+        'D_env': False   # 动态地形开关
     }
     return arg
 
@@ -25,7 +26,8 @@ def init_env_arg(global_arg):
         'K': 2,
         'P': 4,  # 每个位点状态by Cid
         'T': global_arg['T'],  # 模拟总时间
-        'Tp': global_arg['T']  # 每个地形持续时间/地形变化耗时 by Cid
+        'Tp': global_arg['T'],  # 每个地形持续时间/地形变化耗时 by Cid
+        'dynamic': global_arg['D_env']  # 动态地形开关
     }
 
     # 环境情景模型模块
@@ -203,7 +205,7 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     # TODO P0-04 确定所有行动偏好'odds'的函数，需要在brain中调用，请refine
     arg['ACT'] = {
         'odds': {},
-        'p':{}
+        'p': {}
     }
     # 行动执行的偏好分(1-3), default = 2
     xdzx_c = 2  # 行动执行偏好常数
