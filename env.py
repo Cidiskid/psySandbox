@@ -226,6 +226,7 @@ class Env:
         self.T = arg['T']
         self.T_clock = 0
         self.ESM = arg['ESM']
+        self.dynamic = arg['dynamic']
 
     def set_clock(self, T):
         self.T_clock = T
@@ -233,11 +234,19 @@ class Env:
     # 动态过程的实现，通过getValue改变
     def getValue(self, state, t=None):
         assert (state.N == self.N and state.P == self.P)
-        if (t is None):
-            t = self.T_clock
-        value_st = self.models["st"].getValue(state)
-        value_ed = self.models["ed"].getValue(state)
-        return value_st + (value_ed - value_st) * t / self.T
+        # TODO P3-00 加一个动态开关, 请refine
+        if (self.dynamic):
+            if (t is None):
+                t = self.T_clock
+            value_st = self.models["st"].getValue(state)
+            value_ed = self.models["ed"].getValue(state)
+            return value_st + (value_ed - value_st) * t / self.T
+        else:
+            value_st = self.models["st"].getValue(state)
+            return value_st
+
+
+
 
     def getAllValue(self):
         logging.debug("start")
