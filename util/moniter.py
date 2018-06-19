@@ -129,5 +129,19 @@ def AppendToCsv(list, filename):
         for r in data:
             csv_w.writerow(r)
 
+def AppendLinesToCsv(list, filename):
+
+    try:
+        with open(filename, "r") as fp:
+            csv_r = csv.reader(fp)
+            data = [ r for r in csv_r]
+    except:
+        data = []
+    data = data + list
+    with open(filename, "w") as fp:
+        csv_w = csv.writer(fp)
+        for r in data:
+            csv_w.writerow(r)
+
 if( __name__ == "__main__"):
     animation_demo()

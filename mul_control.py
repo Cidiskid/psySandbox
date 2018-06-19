@@ -9,6 +9,7 @@ import brain
 import meeting
 from util.config import all_config
 from util import moniter
+from record import Record
 
 
 class MulControl:
@@ -29,6 +30,7 @@ class MulControl:
         soclnet_arg = arg.init_soclnet_arg(self.global_arg, env_arg)
         self.socl_net = SoclNet(soclnet_arg)
         self.socl_net.flat_init()
+        self.record = Record()
 
     def run_meet_frame(self, Ti, Tfi, meet_name, member, host, up_info):
         # 根据m_name开会
@@ -37,6 +39,7 @@ class MulControl:
                                                                  member=member,
                                                                  host=host,
                                                                  socl_net=self.socl_net,
+                                                                 record=self.record,
                                                                  T=Ti, Tfi=Tfi)
 
     def run_all_frame(self, Ti, Tfi, meet_req, up_info):
@@ -77,14 +80,15 @@ class MulControl:
             if i in all_host:
                 continue
             # 返回是否参与集体行动的信息，如果不参与，执行完个体行动，如果参与,进入后续run_meet_frame
-            self.agents[i], meet_info = brain.mul_agent_act(env=self.main_env,
-                                                            soc_net=self.socl_net,
-                                                            agent=self.agents[i],
-                                                            Ti=Ti, Tfi=Tfi, agent_no=i,
-                                                            meet_req=meet_req)
+            self.agents[i], self.socl_net, meet_info = brain.mul_agent_act(env=self.main_env,
+                                                                           soc_net=self.socl_net,
+                                                                           agent=self.agents[i],
+                                                                           Ti=Ti, Tfi=Tfi, agent_no=i,
+                                                                           record=self.record,
+                                                                           meet_req=meet_req)
             if meet_info is None:
                 continue
-            # 选择参加会议，则加入会议名单 TODO notes:为了不和协调分工搞混，这里的commit是否考虑改为accept？
+            # 选择参加会议，则加入会议名单
             if meet_info['type'] == 'commit':
                 all_meet_info[meet_info['name']]["member"].add(i)
             # 选择发起新会议
@@ -110,9 +114,11 @@ class MulControl:
                                                           last_arg,
                                                           Ti)
         meet_req = {}
+        self.record.add_env_record(self.main_env, Ti)
+        self.record.add_socl_net_record(self.socl_net, Ti)
         for i in range(self.global_arg['Ts']):
             logging.info("frame %3d , Ti:%3d" % (i, Ti))
-
+            self.record.add_agents_record(self.main_env, self.agents, Ti + i)
             # 运行Frame， 并将运行后生成的会议请求记录下来
             meet_req = self.run_all_frame(Ti, i, meet_req, up_info)
 
@@ -133,7 +139,12 @@ class MulControl:
                        + [sum(agent_value) / len(agent_value)] \
                        + [up_info['nkinfo'][key] for key in ['max', 'min', 'avg']]
             moniter.AppendToCsv(csv_info, all_config['result_csv_path'][-1])
-            # TODO P1-05 增加Socil Network的结果输出
+
+            net_title, net_data = self.record.output_socl_net_per_frame(Ti + i)
+            if (Ti + i == 1):
+                moniter.AppendToCsv(net_title, all_config['network_csv_path'])
+            moniter.AppendLinesToCsv(net_data, all_config['network_csv_path'])
+            #  P1-05 增加Socil Network的结果输出
 
     def run_exp(self):
         up_info = {}
@@ -189,5 +200,6 @@ if __name__ == '__main__':
     all_config['result_csv_path'].append(
         os.path.join("result", exp_id, "res_%s_overview.csv" % (exp_id))
     )
+    all_config['network_csv_path'] = os.path.join("result", exp_id, "network.csv")
     main_control = MulControl()
     main_control.run_exp()  # 开始运行实验

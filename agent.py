@@ -13,7 +13,7 @@ class Plan:
         self.goal = goal
         self.goal_value = goal_value
         self.area = area
-        self.info = {}  # TODO P0-08 添加采纳时间戳和owner信息
+        self.info = {}
 
     def is_arrive(self, state):
         assert isinstance(state, State)
@@ -59,8 +59,14 @@ class Agent:
                                                 area=start_area,
                                                 sample_num=env.arg['ACT']['hqxx']['sample_n'],
                                                 T_stmp=0)
+        for k in start_area.info:
+            start_area.info[k] = self.agent_arg['ob'](start_area.info[k])
         self.frame_arg['PSM']['m-info'].append(start_area)
         self.a_plan = None
+
+    def ob(self, env, state):
+        assert isinstance(env, Env) and isinstance(state, State)
+        return self.agent_arg['ob'](env.getValue(state))
 
     def renew_m_info_list(self, area_list, tfi):
         # 加入新信息

@@ -74,7 +74,7 @@ class SoclNet:
         if self.power[u][v]['weight'] > 1:
             self.power[u][v]['weight'] = 1
 
-    def power_relat(self, u, v, delta):
+    def relat_delta(self, u, v, delta):
         self.relat[u][v]['weight'] += delta
         if self.relat[u][v]['weight'] < 0:
             self.relat[u][v]['weight'] = 0
@@ -86,3 +86,14 @@ class SoclNet:
             for v in self.power.nodes:
                 self.power[u][v]['dist'] = self.arg['pow_w2d'](self.power[u][v]['weight'])
         return nx.closeness_centrality(G=self.power, distance='dist')
+
+    def get_relat_close_centrality(self):
+        for u,v in self.relat.edges:
+            self.relat[u][v]['dist'] = self.arg['pow_w2d'](self.relat[u][v]['weight'])
+        return nx.closeness_centrality(G=self.relat, distance='dist')
+
+    def get_power_out_degree_centrality(self):
+        return nx.out_degree_centrality(nx.to_directed(self.power))
+
+    def get_relat_out_degree_centrality(self):
+        return nx.out_degree_centrality(nx.to_directed(self.relat))
