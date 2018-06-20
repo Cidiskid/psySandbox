@@ -234,7 +234,7 @@ class Env:
     # 动态过程的实现，通过getValue改变
     def getValue(self, state, t=None):
         assert (state.N == self.N and state.P == self.P)
-        # TODO P3-00 加一个动态开关, 请refine
+        # 双重修改了/先留着把
         if (self.dynamic):
             if (t is None):
                 t = self.T_clock

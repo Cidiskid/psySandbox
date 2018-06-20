@@ -15,6 +15,9 @@ def meeting_xtfg(env, agents, member, host, socl_net, record, T, Tfi):  # 协调
     cent_weigh = socl_net.get_power_close_centrality()
     plan_pool = []
     # 获取所有host加权后的计划得分的比值
+    for x in member:
+        agents[x].meeting_now = 'xtfg'  # 添加当前行动记录
+
     for x in host:
         if not agents[x].a_plan is None:
             plan_v = env.arg['plan']['eval'](agents[x].a_plan.len_to_finish(agents[x].a_plan.area.center),
@@ -42,6 +45,9 @@ def meeting_xxjl(env, agents, member, host, socl_net, record, T, Tfi):  # 信息
     assert host.issubset(member)
     ret_info = []
     for x in member:
+        agents[x].meeting_now = 'xxjl'  # 添加当前行动记录
+
+    for x in member:
         if not x in host:
             socl_net, agents[x] = acts.act_hqxx(env, socl_net, x, agents[x], T, Tfi)
     for x in member:
@@ -64,6 +70,9 @@ def meeting_tljc(env, agents, member, host, socl_net, record, T, Tfi):  # 讨论
     # host的max_area中，最好的区域用于制定计划
     all_max_area = [agents[x].get_max_area() for x in host]
     max_area = max(all_max_area, key=lambda a: a.info['max'])
+
+    for x in member:
+        agents[x].meeting_now = 'tljc'  # 添加当前行动记录
 
     new_plans = []
     for x in member:

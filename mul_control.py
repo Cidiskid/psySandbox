@@ -17,6 +17,7 @@ class MulControl:
         # 环境初始化
         self.global_arg = arg.init_global_arg()
         env_arg = arg.init_env_arg(self.global_arg)
+        # TODO cid 需要增加nk的一个读入操作
         self.main_env = Env(env_arg)
         # 个体初始化
         self.agents = []
@@ -29,6 +30,7 @@ class MulControl:
         # 社会网络初始化
         soclnet_arg = arg.init_soclnet_arg(self.global_arg, env_arg)
         self.socl_net = SoclNet(soclnet_arg)
+        # TODO cid 需要增加ScolNet的一个读入操作
         self.socl_net.flat_init()
         self.record = Record()
 
@@ -56,6 +58,16 @@ class MulControl:
                 Tp=Ti,
                 PSMfi=self.main_env.getValue(self.agents[i].state_now, Ti)
             )
+        # 清空agent的行动和会议记录
+        for i in range(len(self.agents)):
+            self.agents[i].meeting_now = ''
+            self.agents[i].policy_now = ''
+
+        # TODO cid NOTE 增加SoclNet自然衰减
+        for u in range(len(self.agents)):
+            for v in range(u):
+                self.socl_net.relat[u][v]['weight'] = self.socl_net.arg['re_decr_r'] * self.socl_net.relat[u][v][
+                    'weight']
 
         # 读取之前发起的集体行动
         all_host = set()
@@ -132,6 +144,7 @@ class MulControl:
                     up_info['nkinfo']['avg']
                 ]
                 moniter.AppendToCsv(csv_info, all_config['result_csv_path'][k])
+
             agent_value = [self.main_env.getValue(self.agents[k].state_now, Ti) for k in
                            range(self.global_arg["Nagent"])]
             csv_info = [Ti + i] \
@@ -139,6 +152,13 @@ class MulControl:
                        + [sum(agent_value) / len(agent_value)] \
                        + [up_info['nkinfo'][key] for key in ['max', 'min', 'avg']]
             moniter.AppendToCsv(csv_info, all_config['result_csv_path'][-1])
+
+            # TODO NOTE cid 添加act信息(相应增加agent类里的变量）
+            act_list = [self.agents[k].policy_now +'/'+ self.agents[k].meeting_now for k in
+                           range(self.global_arg["Nagent"])]
+            csv_info_act = [Ti + i] \
+                       + act_list
+            moniter.AppendToCsv(csv_info_act, all_config['act_csv_path'])
 
             net_title, net_data = self.record.output_socl_net_per_frame(Ti + i)
             if (Ti + i == 1):
@@ -149,16 +169,20 @@ class MulControl:
     def run_exp(self):
         up_info = {}
 
-        # 单个agent的结果文档
+        # 单个agent的结果表
         for k in range(self.global_arg["Nagent"]):
             csv_head = ['frame', 'SSMfi', 'nkmax', 'nkmin', 'nkavg']
             moniter.AppendToCsv(csv_head, all_config['result_csv_path'][k])
-        # 汇总结果文档
+        # 结果汇总表
         csv_head = ['frame'] \
                    + ["agent%d" % (k) for k in range(self.global_arg['Nagent'])] \
                    + ["agent_avg"] \
                    + ['nkmax', 'nkmin', 'nkavg']
         moniter.AppendToCsv(csv_head, all_config['result_csv_path'][-1])
+
+        csv_head_act = ['frame'] \
+                   + ["agent%d" % (k) for k in range(self.global_arg['Nagent'])]
+        moniter.AppendToCsv(csv_head_act, all_config['act_csv_path'])
 
         stage_num = self.global_arg['T'] // self.global_arg['Ts']
         for i in range(stage_num):
@@ -201,6 +225,8 @@ if __name__ == '__main__':
     all_config['result_csv_path'].append(
         os.path.join("result", exp_id, "res_%s_overview.csv" % (exp_id))
     )
+    # TODO NOTE cid 添加一个act的记录文件
+    all_config['act_csv_path'] = os.path.join("result", exp_id, "act_overview.csv")
     all_config['network_csv_path'] = os.path.join("result", exp_id, "network.csv")
     main_control = MulControl()
     main_control.run_exp()  # 开始运行实验

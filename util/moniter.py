@@ -1,4 +1,4 @@
-from util.config import all_config
+from config import all_config
 import logging
 import time
 import csv

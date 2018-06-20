@@ -54,6 +54,8 @@ class Agent:
         self.stage_arg = arg['default']['stage']
         self.frame_arg = arg['default']['frame']
         self.state_now = None
+        self.policy_now = None
+        self.meeting_now = None
         start_area = Area(State(0), [True] * State.N, (State.P // 2) * State.N)
         start_area.info = get_area_sample_distr(env=env,
                                                 area=start_area,

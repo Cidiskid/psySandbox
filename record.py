@@ -1,3 +1,5 @@
+# -*- coding:utf-8 -*-
+
 import arg
 from util.config import all_config
 from util import moniter
@@ -71,7 +73,6 @@ class Record:
         for i in range(self.Nagent):
             info.append(self.add_agent_record(env, agents[i], i, T))
         return info
-
     def get_agent_record(self, agent_no, T):
         assert 0 <= agent_no < self.Nagent
         ret_t = 0

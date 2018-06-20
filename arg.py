@@ -14,7 +14,7 @@ def init_global_arg():
         'T': 128,  # 模拟总时间
         "Ts": 16,  # 每个stage的帧数
         "Nagent": 10,  # Agent数量
-        'D_env': False   # 动态地形开关
+        'D_env': False  # 动态地形开关
     }
     return arg
 
@@ -83,18 +83,18 @@ def init_env_arg(global_arg):
         },
         "whlj": {
             "k": global_arg['Nagent'] // 2,
-            "delta_relate": lambda old: 0.1 * (1 - old)
+            "delta_relate": lambda old: 0.1 * (1 - old)  # 0.1是改变速率，可以手动修改
         },
         "dyjs": {
-            "delta_relate": lambda old: 0.1 * (1 - old)
+            "delta_relate": lambda old: 0.1 * (1 - old)  # 0.1是改变速率，可以手动修改
         }
     }
 
     # 集体行动相关参数表
     arg['meeting'] = {
         'xxjl': {
-            'last_p_t': 32,  #
-            'max_num': 3
+            'last_p_t': 32,  # 最近多少帧内的信息
+            'max_num': 3  # 最多共享多少个
         }
     }
     return arg
@@ -105,16 +105,18 @@ def init_soclnet_arg(global_arg, env_arg):
     arg = {}
     arg['Nagent'] = global_arg['Nagent']
 
-    # 权重到距离的转化公式 TODO NOTE 可尝试令 dist=1.01-x
-    # networkx自带的Cc算法是归一化的,但normalize by the number of nodes，上述距离定义的最短距为0.01，因此最短距不是(g-1)而是0.01*(g-1)
+    # 权重到距离的转化公式
+    # networkx自带的Cc算法是归一化的,若令 dist=1.01-x上述距离定义的最短距为0.01，因此最短距不是(g-1)而是0.01*(g-1)
     arg['pow_w2d'] = (lambda x: 1 / (0.01 + x) + 0.01)
+
+    arg['re_decr_r'] = 0.95  # 自然衰减率
 
     return arg
 
 
 def init_agent_arg(global_arg, env_arg):
     arg = {}
-    # 个体属性差异 TODO NOTE 添加更多类型属性值
+    # 个体属性差异
     arg['a'] = {
         "insight": clip_rsmp(0.001, 0.999, Norm, mu=0.5, sigma=0.2),  # 环境感知能力
         "act": Norm(0.5, 0.1),  # 行动意愿
@@ -133,7 +135,6 @@ def init_agent_arg(global_arg, env_arg):
     arg["re_incr_g"] = (
         lambda old_re: (1 - 2 * incr_rate) * old_re + 2 * incr_rate)  # 表示general的increase，在参加完任意一次集体活动后被调用
 
-    # TODO notes: P0-07的更新公式，请refine,感觉需要包一层
     arg['dP_r'] = {
         "other": 0.2,  # 对他人给的计划变化幅度更大
         "self": 0.1  # 对自己的计划变化幅度较小（效能提升小）
@@ -192,26 +193,23 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     }
 
     # 计算当前个体在这一帧感知到的行动需求
-    PSManeed_r = 1.0 / (1 + exp(5 * (PSMfi / arg['PSM']['f-req'] - 1)))
-    PSManeed_a = 0.5
-    arg['PSM']['a-need'] = PSManeed_a * last_arg['PSM']['a-need'] + (1 - PSManeed_a) * PSManeed_r
+    # PSManeed_r = 1.0 / (1 + exp(5 * (PSMfi / arg['PSM']['f-req'] - 1)))
+    # PSManeed_a = 0.5
+    # arg['PSM']['a-need'] = PSManeed_a * last_arg['PSM']['a-need'] + (1 - PSManeed_a) * PSManeed_r
 
     # 判断当前个体在这一帧是否采取行动
-    f1 = 1 + 0.5 * tanh(5 * (arg['PSM']['a-need'] - 0.75)) \
-         + 0.5 * tanh(5 * (agent_arg['a']['act'] - 0.5))
-    g1 = 1 - 0.2 * tanh(5 * (arg['PSM']['p-cplx'] - 0.625))
-    h1 = 1 + 0.1 * cos(pi * (arg['PSM']['p-ugt'] - 0.5))
-    arg['PROC'] = {
-        'a-m': f1 * g1 * h1,  # 行动动机，代表行动意愿的强度
-        'a-th': 0  # 行动阈值，初始0.6，测试版保证行动
-    }
-    arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0)  # TRUE行动，FALSE不行动
+    # f1 = 1 + 0.5 * tanh(5 * (arg['PSM']['a-need'] - 0.75)) \
+    #    + 0.5 * tanh(5 * (agent_arg['a']['act'] - 0.5))
+    # g1 = 1 - 0.2 * tanh(5 * (arg['PSM']['p-cplx'] - 0.625))
+    # h1 = 1 + 0.1 * cos(pi * (arg['PSM']['p-ugt'] - 0.5))
+    # arg['PROC'] = {
+    #    'a-m': f1 * g1 * h1,  # 行动动机，代表行动意愿的强度
+    #    'a-th': 0  # 行动阈值，初始0.6，测试版保证行动
+    # }
+    arg['PROC'] = {}
+    arg['PROC']['action'] = True  # 目前始终行动
+    # arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0)  # TRUE行动，FALSE不行动
 
-    # TODO P0-04 确定所有行动偏好'odds'的函数，需要在brain中调用，请refine
-    arg['ACT'] = {
-        'odds': {},
-        'p': {}
-    }
     # 行动执行的偏好分(1-3), default = 2
     xdzx_c = 2  # 行动执行偏好常数
     xxhq_c = 0
@@ -229,26 +227,28 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
             "jhjc": lambda dF: jhjc_c + odds_base * (0.5 + agent_arg['a']['xplt']) * (1 + jhjc_r * tanh(100 * dF)),
             "whlj": lambda dF: whlj_c + odds_base * (0.5 + agent_arg['a']['enable']),
             "dyjs": lambda dF: dyjs_c + odds_base * (0.5 + agent_arg['a']['enable']),
-            "tjzt": lambda dF: tjzt_c + odds_base * (0.5 + agent_arg['a']['enable'])
+            "tjzt": lambda dF: tjzt_c + odds_base * 0   # 先去掉这个选项
+            # "tjzt": lambda dF: tjzt_c + odds_base * (0.5 + agent_arg['a']['enable'])
         },
         "p": {},
         "p-cmt": {},
         "p-req": {}
     }
-    k = 0.2
+    k_cmt = 0.2
     arg['ACT']['p-cmt']['xxjl'] = lambda max_relat, max_power, self_efficacy: \
-        (1 - k) * max_relat ** 2 + k
+        (1 - k_cmt) * max_relat ** 2 + k_cmt
     arg['ACT']['p-cmt']['tljc'] = lambda max_relat, max_power, self_efficacy: \
         (1 - max(0, max_power - self_efficacy)) * max_relat ** 2 + max(0, max_power - self_efficacy)
     arg['ACT']['p-cmt']['xtfg'] = lambda max_relat, max_power, self_efficacy: \
         (1 - max(0, max_power - self_efficacy)) * max_relat ** 2 + max(0, max_power - self_efficacy)
-    k = 0.2
+    k_req = 0.2
     arg['ACT']['p-req']['xxjl'] = lambda self_efficacy, host_Cc, host_Cod: \
-        (1 - k) * host_Cc ** 2 + k
+        (1 - k_req) * host_Cc ** 2 + k_req
     arg['ACT']['p-req']['tljc'] = lambda self_efficacy, host_Cc, host_Cod: \
         (1 - self_efficacy) * host_Cod ** 2 + self_efficacy
     arg['ACT']['p-req']['xtfg'] = lambda self_efficacy, host_Cc, host_Cod: \
         (1 - self_efficacy) * host_Cod ** 2 + self_efficacy
+
     '''
     # 以下为老的代码部分
     # 以下参数用于确定采取何种行动的过程

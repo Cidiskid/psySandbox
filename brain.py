@@ -62,34 +62,33 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
     host_Cod = soc_net.get_power_out_degree_centrality()[agent_no]
     host_Cc = soc_net.get_relat_close_centrality()[agent_no]
     max_relat = {m_name: max([soc_net.relat[x][agent_no]['weight'] for x in meet_req[m_name]])
-    for m_name in meet_req}
+                 for m_name in meet_req}
     max_power = {m_name: max([soc_net.power[x][agent_no]['weight'] for x in meet_req[m_name]])
-    for m_name in meet_req}
+                 for m_name in meet_req}
 
     # 如果选择的策略正好有相应会议，考虑要不要参加
     if use_police == "hqxx_xxjl":
         if 'xxjl' in meet_req:
-            # 参与行动的概率为关系最好的召集人的relat值
-            # P1-01 接受概率改为一个lambda表达式在arg中定义
-            # 可考虑放在Agent.arg[frame][MEETING][p][xxjl][join]下（具体结构可优化下）
-            # 传入参数暂定max_relat，或者把SoclNet里能传的都传了，包括relat的Cc,power的in_degree_centrality、out_degree_centrality、自信度power[i][i]
+            # p-cmt：接受概率
             commit_p = agent.frame_arg["ACT"]["p-cmt"]["xxjl"](max_relat['xxjl'], max_power['xxjl'], self_efficacy)
             if (commit_p > uniform(0, 1)):
                 return agent, soc_net, {"type": "commit", "name": "xxjl"}
         # 没有会议，直接进行单人的获取信息hqxx行动
         last_agent = deepcopy(agent)
+        agent.meeting_now = ''  # 不参加会议
         soc_net, agent = acts.act_hqxx(env, soc_net, agent_no, agent, record, Ti, Tfi)
         # 如果获得比之前更好的区域，考虑召集会议一起制定计划，进行讨论决策tljc
         if (last_agent.get_max_area().info['max'] < agent.get_max_area().info['max']):
             # P1-02 同样用lambda表达式传回
-            # 可考虑Agent.arg[frame][MEETING][p][tljc][host]，传入参数"自信度"power[i][i]，和agnet[i]的出度out_degree_centrality
-            p_req = agent.frame_arg["ACT"]["p-req"]["tljc"](self_efficacy, host_Cc, host_Cod)
-            if p_req > uniform(0, 1):  # 根据"自信"程度随机选择是否召集会议
+            p_req_tljc = agent.frame_arg["ACT"]["p-req"]["tljc"](self_efficacy, host_Cc, host_Cod)
+            if p_req_tljc > uniform(0, 1):
+                agent.meeting_now = "tljc_req"  # 发起讨论决策会议
                 meet_info = {"type": "req", "name": "tljc"}
-        # 如果没有获得更好的区域，考虑召集会议进行信息交流xxjl，"自信"程度越高，越希望召集会议
+        # 如果没有获得更好的区域，考虑召集会议进行信息交流xxjl
         else:
-            p_req = agent.frame_arg["ACT"]["p-req"]["xxjl"](self_efficacy, host_Cc, host_Cod)
-            if p_req > uniform(0, 1):
+            p_req_xxjl = agent.frame_arg["ACT"]["p-req"]["xxjl"](self_efficacy, host_Cc, host_Cod)
+            if p_req_xxjl > uniform(0, 1):
+                agent.meeting_now = 'xxjl_req'  # 发起信息交流会议
                 meet_info = {"type": "req", "name": "xxjl"}
         return agent, soc_net, meet_info
     elif use_police == "jhjc_tljc":
@@ -98,10 +97,12 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
             if (p_cmt > uniform(0, 1)):
                 return agent, soc_net, {"type": "commit", "name": "tljc"}
         last_agent = deepcopy(agent)
-        (soc_net,agent) = acts.act_jhnd(env, soc_net, agent_no, agent, record, Ti, Tfi)
+        agent.meeting_now = ''  # 不参加会议
+        (soc_net, agent) = acts.act_jhnd(env, soc_net, agent_no, agent, record, Ti, Tfi)
         if (last_agent.a_plan is None or last_agent.a_plan.goal_value < agent.a_plan.goal_value):
             p_req = agent.frame_arg["ACT"]['p-req']['xtfg'](self_efficacy, host_Cc, host_Cod)
             if p_req > uniform(0, 1):
+                agent.meeting_now = 'xtfg_req'  # 发起信息交流会议
                 meet_info = {"type": "req", "name": "xtfg"}
         return agent, soc_net, meet_info
     elif use_police == "xdzx_xtfg":
@@ -110,10 +111,11 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
             if (p_cmt > uniform(0, 1)):
                 return agent, soc_net, {"type": "commit", "name": "xtfg"}
         last_agent = deepcopy(agent)
+        agent.meeting_now = ''  # 不参加会议
         (soc_net, agent) = acts.act_xdzx(env, soc_net, agent_no, agent, record, Ti, Tfi)
 
         # 如果计划执行完了(没计划)，或新的计划比原来好，召集讨论决策？
-        # TODO notes:行动执行完后发起讨论感觉有点奇怪，我先删掉这一段
+        # 行动执行完后发起讨论感觉有点奇怪，我先删掉这一段
         # if ((last_agent.a_plan is None) or (
         #        not agent.a_plan is None and last_agent.a_plan.goal_value < agent.a_plan.goal_value)):
         #    if soc_net.power[agent_no][agent_no]['weight'] > uniform(0, 1):
@@ -121,17 +123,18 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
 
         return agent, soc_net, meet_info
     elif use_police == "whlj":
+        agent.meeting_now = ''  # 不参加会议
         soc_net, agent = acts.act_whlj(env, soc_net, agent_no, agent, record, Ti, Tfi)
         return agent, soc_net, meet_info
 
     elif use_police == "dyjs":
-        #  P1-07
-        # 所有agent（包括自己）按出度out_degree_centrality进行随机
+        agent.meeting_now = ''  # 不参加会议
         soc_net, agent = acts.act_dyjs(env, soc_net, agent_no, agent, record, Ti, Tfi)
         return agent, soc_net, meet_info
 
     elif use_police == "tjzt":
         #  P2-02
+        agent.meeting_now = ''  # 不参加会议
         soc_net, agent = acts.act_tjzt(env, soc_net, agent_no, agent, record, Ti, Tfi)
         return agent, soc_net, meet_info
 
