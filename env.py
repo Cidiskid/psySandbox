@@ -146,7 +146,6 @@ class Area:
                 return False
         return True
 
-
     def rand_walk(self, state):
         assert isinstance(state, State)
         assert self.state_in(state)
@@ -160,7 +159,7 @@ class Area:
                 return state_t
 
     def sample_near(self, state, sample_num, dfs_r=0):
-        logging.debug("start")
+        #        logging.debug("start")
         assert isinstance(state, State)
         assert self.state_in(state)
         retry_num = sample_num
@@ -245,11 +244,8 @@ class Env:
             value_st = self.models["st"].getValue(state)
             return value_st
 
-
-
-
     def getAllValue(self):
-        logging.debug("start")
+        logging.info("getALLValue start")
         return [self.getValue(State(i)) for i in range(self.P ** self.N)]
 
     def getAllPeakValue(self):
@@ -299,7 +295,7 @@ def get_area_sample_value(env, area, sample_num, state=None, dfs_r=0.5):
 def get_area_sample_distr(env, area, sample_num, T_stmp, state=None, dfs_r=0.5):
     if (state is None):
         state = area.center
-    logging.debug("start")
+    # logging.debug("start")
     state_values = get_area_sample_value(env, area, sample_num, state, dfs_r)
     all_value = sorted(state_values)
     return {

@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import arg
+import logging
 from util.config import all_config
 from util import moniter
 from agent import Agent, Plan
@@ -48,9 +49,18 @@ class Record:
             info['plan_goal'] = agent.a_plan.goal_value
         return info
 
-    def add_env_record(self, env, T):
+    # 尝试不调用getAllValue
+    def add_env_record(self, env, T,up_info = None):
         assert isinstance(env, Env)
-        info = Record.get_env_info(env)
+        if up_info is None:
+            info = Record.get_env_info(env)
+            # logging.info(info)
+        else:
+            info = ordict()
+            info['max'] = up_info['nkinfo']['max']
+            info['avg'] = up_info['nkinfo']['avg']
+            info['min'] = up_info['nkinfo']['min']
+            # logging.info(info)
         self.env.append((T,info))
         return info
 

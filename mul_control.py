@@ -136,7 +136,8 @@ class MulControl:
                                                           last_arg,
                                                           Ti)
         meet_req = {}
-        self.record.add_env_record(self.main_env, Ti)
+        # TODO NOTE cid传了个up_info进去，避免重复遍历
+        self.record.add_env_record(self.main_env, Ti,up_info)
         self.record.add_socl_net_record(self.socl_net, Ti)
         for i in range(self.global_arg['Ts']):
             logging.info("frame %3d , Ti:%3d" % (i, Ti))
@@ -207,13 +208,15 @@ class MulControl:
         moniter.AppendToCsv(csv_head_act, all_config['act_csv_path'])
 
         stage_num = self.global_arg['T'] // self.global_arg['Ts']
+        up_info['nkinfo'] = self.main_env.getModelDistri()
         for i in range(stage_num):
             Ti = i * self.global_arg['Ts'] + 1
             logging.info("stage %3d, Ti:%3d" % (i, Ti))
             self.main_env.T_clock = Ti
             # 每个stage遍历一遍当前模型，获取分布信息
-            up_info['nkinfo'] = self.main_env.getModelDistri()
-            logging.debug("max_value:{max}".format(**up_info['nkinfo']))
+            # 减少运算量，只算第一帧
+            # up_info['nkinfo'] = self.main_env.getModelDistri()
+            # logging.debug("max_value:{max}".format(**up_info['nkinfo']))
             # 运行一个Stage，Ti表示每个Stage的第一帧
             self.run_stage(Ti, up_info)
 

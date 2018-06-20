@@ -23,9 +23,9 @@ def init_global_arg():
 def init_env_arg(global_arg):
     # NK model
     arg = {
-        'N': 6,
+        'N': 8,
         'K': 5,
-        'P': 4,  # 每个位点状态by Cid
+        'P': 3,  # 每个位点状态by Cid
         'T': global_arg['T'],  # 模拟总时间
         'Tp': global_arg['T'],  # 每个地形持续时间/地形变化耗时 by Cid
         'dynamic': global_arg['D_env']  # 动态地形开关
@@ -40,9 +40,9 @@ def init_env_arg(global_arg):
         "p-ugt": (1 - tanh(0.1 * (global_arg['Ts'] - 32))) * 0.5
     }
 
-    # 区域相关参数，代表目标
+    # 区域相关参数，代表目标 已经无效
     arg['area'] = {
-        "sample_num": 100,  # 抽样个数
+        "sample_num": 50,  # 抽样个数
         "max_dist": 3,  # 游走距离
         "mask_num": min(5, arg['N'])  # 可移动的位点限制
     }
@@ -68,10 +68,10 @@ def init_env_arg(global_arg):
         },
         # 获取信息相关参数表
         'hqxx': {
-            "mask_n": 2,  # 区域的方向夹角大小，指区域内的点中允许变化的位点数量
-            "dist": 3,  # 区域半径，所有点和中心点的最大距离
-            "dfs_p": 0.5,  # 表示多大概率往深了走
-            "sample_n": 50  # 从区域中抽样的数量
+            "mask_n": 2,  # default 2 区域的方向夹角大小，指区域内的点中允许变化的位点数量
+            "dist": 3,  # default 3 区域半径，所有点和中心点的最大距离
+            "dfs_p": 0.5,  # default 0.5 表示多大概率往深了走
+            "sample_n": 50  # default 50 从区域中抽样的数量
         },
         # 计划拟定相关参数表
         'jhnd': {
@@ -128,9 +128,9 @@ def init_agent_arg(global_arg, env_arg):
     }
 
     # 适应分数观察值的偏差
-    ob_a = 0.01  # default 0.025
-    arg["ob"] = (lambda x: Norm(x, ob_a / arg['a']['insight']))  # default公式，
-    #    arg["ob"] = (lambda x: Norm(x, 0.05))  #测试公式
+    ob_a = 0.005  # default 0.025
+    # arg["ob"] = (lambda x: Norm(x, ob_a / arg['a']['insight']))  # default公式
+    arg["ob"] = (lambda x: x)  #测试公式
 
     incr_rate = 0.03  # 关系增加速率
     arg["re_incr_g"] = (
