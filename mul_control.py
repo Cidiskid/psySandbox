@@ -17,7 +17,7 @@ class MulControl:
         # 环境初始化
         self.global_arg = arg.init_global_arg()
         env_arg = arg.init_env_arg(self.global_arg)
-        # TODO cid 需要增加nk的一个读入操作
+        # TODO @wzk 需要增加nk的一个读入操作
         self.main_env = Env(env_arg)
         # 个体初始化
         self.agents = []
@@ -30,7 +30,7 @@ class MulControl:
         # 社会网络初始化
         soclnet_arg = arg.init_soclnet_arg(self.global_arg, env_arg)
         self.socl_net = SoclNet(soclnet_arg)
-        # TODO cid 需要增加ScolNet的一个读入操作
+        # TODO @wzk 需要增加ScolNet的一个读入操作
         self.socl_net.flat_init()
         self.record = Record()
 
@@ -63,7 +63,7 @@ class MulControl:
             self.agents[i].meeting_now = ''
             self.agents[i].policy_now = ''
 
-        # TODO cid NOTE 增加SoclNet自然衰减
+        # TODO NOTE cid 增加SoclNet自然衰减
         for u in range(len(self.agents)):
             for v in range(u):
                 self.socl_net.relat[u][v]['weight'] = self.socl_net.arg['re_decr_r'] * self.socl_net.relat[u][v][
@@ -92,12 +92,22 @@ class MulControl:
             if i in all_host:
                 continue
             # 返回是否参与集体行动的信息，如果不参与，执行完个体行动，如果参与,进入后续run_meet_frame
-            self.agents[i], self.socl_net, meet_info = brain.mul_agent_act(env=self.main_env,
-                                                                           soc_net=self.socl_net,
-                                                                           agent=self.agents[i],
-                                                                           Ti=Ti, Tfi=Tfi, agent_no=i,
-                                                                           record=self.record,
-                                                                           meet_req=meet_req)
+            if self.global_arg['mul_agent']:
+                # logging.info("using mul_act")
+                self.agents[i], self.socl_net, meet_info = brain.mul_agent_act(env=self.main_env,
+                                                                               soc_net=self.socl_net,
+                                                                               agent=self.agents[i],
+                                                                               Ti=Ti, Tfi=Tfi, agent_no=i,
+                                                                               record=self.record,
+                                                                               meet_req=meet_req)
+            else:
+                self.agents[i], self.socl_net, meet_info = brain.sgl_agent_act(env=self.main_env,
+                                                                               soc_net=self.socl_net,
+                                                                               agent=self.agents[i],
+                                                                               Ti=Ti, Tfi=Tfi, agent_no=i,
+                                                                               record=self.record,
+                                                                               meet_req=meet_req)
+
             if meet_info is None:
                 continue
             # 选择参加会议，则加入会议名单
@@ -154,12 +164,13 @@ class MulControl:
             moniter.AppendToCsv(csv_info, all_config['result_csv_path'][-1])
 
             # TODO NOTE cid 添加act信息(相应增加agent类里的变量）
-            act_list = [self.agents[k].policy_now +'/'+ self.agents[k].meeting_now for k in
-                           range(self.global_arg["Nagent"])]
+            act_list = [self.agents[k].policy_now + '/' + self.agents[k].meeting_now for k in
+                        range(self.global_arg["Nagent"])]
             csv_info_act = [Ti + i] \
-                       + act_list
+                           + act_list
             moniter.AppendToCsv(csv_info_act, all_config['act_csv_path'])
 
+            # TODO @wzk 按stage输出
             net_title, net_data = self.record.output_socl_net_per_frame(Ti + i)
             if (Ti + i == 1):
                 moniter.AppendToCsv(net_title, all_config['network_csv_path'])
@@ -181,7 +192,7 @@ class MulControl:
         moniter.AppendToCsv(csv_head, all_config['result_csv_path'][-1])
 
         csv_head_act = ['frame'] \
-                   + ["agent%d" % (k) for k in range(self.global_arg['Nagent'])]
+                       + ["agent%d" % (k) for k in range(self.global_arg['Nagent'])]
         moniter.AppendToCsv(csv_head_act, all_config['act_csv_path'])
 
         stage_num = self.global_arg['T'] // self.global_arg['Ts']
@@ -206,15 +217,27 @@ if __name__ == '__main__':
     logging.info("Start")
     global_arg = arg.init_global_arg()
     env_arg = arg.init_env_arg(global_arg)
-    exp_id = "_".join([
-        "mul_agent_view",
-        time.strftime("%Y%m%d-%H%M%S"),
-        "N" + str(env_arg['N']),
-        "K" + str(env_arg['K']),
-        "P" + str(env_arg['P']),
-        "T" + str(global_arg['T']),
-        "Ts" + str(global_arg['Ts'])
-    ])
+    # 修改了single情况下的文件名
+    if global_arg['mul_agent']:
+        exp_id = "_".join([
+            "mul_agent_view",
+            time.strftime("%Y%m%d-%H%M%S"),
+            "N" + str(env_arg['N']),
+            "K" + str(env_arg['K']),
+            "P" + str(env_arg['P']),
+            "T" + str(global_arg['T']),
+            "Ts" + str(global_arg['Ts'])
+        ])
+    else:
+        exp_id = "_".join([
+            "sgl_agent_view",
+            time.strftime("%Y%m%d-%H%M%S"),
+            "N" + str(env_arg['N']),
+            "K" + str(env_arg['K']),
+            "P" + str(env_arg['P']),
+            "T" + str(global_arg['T']),
+            "Ts" + str(global_arg['Ts'])
+        ])
     try:
         os.mkdir(os.path.join("result", exp_id))
     except:

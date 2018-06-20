@@ -14,7 +14,8 @@ def init_global_arg():
         'T': 128,  # 模拟总时间
         "Ts": 16,  # 每个stage的帧数
         "Nagent": 10,  # Agent数量
-        'D_env': False  # 动态地形开关
+        'D_env': False,  # 动态地形开关
+        'mul_agent': False   # 多人互动开关
     }
     return arg
 
@@ -109,7 +110,7 @@ def init_soclnet_arg(global_arg, env_arg):
     # networkx自带的Cc算法是归一化的,若令 dist=1.01-x上述距离定义的最短距为0.01，因此最短距不是(g-1)而是0.01*(g-1)
     arg['pow_w2d'] = (lambda x: 1 / (0.01 + x) + 0.01)
 
-    arg['re_decr_r'] = 0.95  # 自然衰减率
+    arg['re_decr_r'] = 0.98  # 自然衰减率
 
     return arg
 

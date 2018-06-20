@@ -37,6 +37,43 @@ def single_ver1(env, agent, Ti, Tfi, agent_no):
     pass
 
 
+# 单人版的行动逻辑
+def sgl_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
+    assert isinstance(env, Env) and isinstance(soc_net, SoclNet) and isinstance(agent, Agent)
+    # P2-01 添加对arg['PROC']['action']的判断
+    if not agent.frame_arg["PROC"]['action']:
+        return agent, soc_net, None
+    # 各种选项的概率
+    # P1-06,07，P2-02 增加新act类型
+    dF = agent.get_max_area().info['max'] - env.getValue(agent.state_now)
+    prob = {"hqxx_xxjl": agent.frame_arg['ACT']['odds']['hqxx'](dF),
+            "jhjc_tljc": agent.frame_arg['ACT']['odds']['jhjc'](dF),
+            "xdzx_xtfg": agent.frame_arg['ACT']['odds']['xdzx'](dF)
+            }
+
+    use_police = util.random_choice(prob)  # 根据概率参数随机选择一种行动策略
+    meet_info = None
+    #    logging.debug("meet_req:{}".format(meet_req))
+    #    logging.debug("agent_no:{}".format(agent_no))
+    if use_police == "hqxx_xxjl":
+        last_agent = deepcopy(agent)
+        agent.meeting_now = ''  # 不参加会议
+        soc_net, agent = acts.act_hqxx(env, soc_net, agent_no, agent, record, Ti, Tfi)
+        # 如果获得比之前更好的区域，考虑召集会议一起制定计划，进行讨论决策tljc
+        return agent, soc_net, meet_info
+    elif use_police == "jhjc_tljc":
+        last_agent = deepcopy(agent)
+        agent.meeting_now = ''  # 不参加会议
+        (soc_net, agent) = acts.act_jhnd(env, soc_net, agent_no, agent, record, Ti, Tfi)
+        return agent, soc_net, meet_info
+    elif use_police == "xdzx_xtfg":
+        last_agent = deepcopy(agent)
+        agent.meeting_now = ''  # 不参加会议
+        (soc_net, agent) = acts.act_xdzx(env, soc_net, agent_no, agent, record, Ti, Tfi)
+
+        return agent, soc_net, meet_info
+
+
 # 多人版的行动逻辑
 def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
     assert isinstance(env, Env) and isinstance(soc_net, SoclNet) and isinstance(agent, Agent)
