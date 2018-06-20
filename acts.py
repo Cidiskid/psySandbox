@@ -75,7 +75,7 @@ def act_jhzx(env, socl_net, agent_no, agent, record, T, Tfi):  # 计划执行
     # for k in new_area.info:
     #    new_area.info[k] = agent.agent_arg['ob'](new_area.info[k])
     agent.renew_m_info(new_area, T + Tfi)
-
+    agent.policy_now = 'jhzx'
     # 计划执行完毕后，清空计划
     if agent.a_plan.is_arrive(agent.state_now):
         # TODO NOTE cid 添加了清空计划前对计划的评价
@@ -91,10 +91,11 @@ def act_jhzx(env, socl_net, agent_no, agent, record, T, Tfi):  # 计划执行
             dP = agent.agent_arg["dPower"](dF, dP_r)
             d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
             socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
+        agent.policy_now = 'jhzx_fin'
 
         agent.a_plan = None
 
-    agent.policy_now = 'jhzx'  # 添加当前行动记录
+     # 添加当前行动记录
     return socl_net, agent
 
 

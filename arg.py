@@ -11,7 +11,7 @@ from env import Area
 
 def init_global_arg():
     arg = {
-        'T': 128,  # 模拟总时间
+        'T': 512,  # 模拟总时间
         "Ts": 16,  # 每个stage的帧数
         "Nagent": 10,  # Agent数量
         'D_env': False,  # 动态地形开关
@@ -24,7 +24,7 @@ def init_env_arg(global_arg):
     # NK model
     arg = {
         'N': 6,
-        'K': 2,
+        'K': 5,
         'P': 4,  # 每个位点状态by Cid
         'T': global_arg['T'],  # 模拟总时间
         'Tp': global_arg['T'],  # 每个地形持续时间/地形变化耗时 by Cid

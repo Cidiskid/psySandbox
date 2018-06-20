@@ -163,6 +163,15 @@ class MulControl:
                        + [up_info['nkinfo'][key] for key in ['max', 'min', 'avg']]
             moniter.AppendToCsv(csv_info, all_config['result_csv_path'][-1])
 
+            # 输出max_area
+            agent_max_area = [self.agents[k].get_max_area().info['max'] for k in
+                              range(self.global_arg["Nagent"])]
+            csv_info_area = [Ti + i] \
+                            + agent_max_area \
+                            + [sum(agent_max_area) / len(agent_max_area)] \
+                            + [up_info['nkinfo'][key] for key in ['max', 'min', 'avg']]
+            moniter.AppendToCsv(csv_info_area, all_config['area_csv_path'])
+
             # TODO NOTE cid 添加act信息(相应增加agent类里的变量）
             act_list = [self.agents[k].policy_now + '/' + self.agents[k].meeting_now for k in
                         range(self.global_arg["Nagent"])]
@@ -171,10 +180,11 @@ class MulControl:
             moniter.AppendToCsv(csv_info_act, all_config['act_csv_path'])
 
             # TODO @wzk 按stage输出
-            net_title, net_data = self.record.output_socl_net_per_frame(Ti + i)
-            if (Ti + i == 1):
-                moniter.AppendToCsv(net_title, all_config['network_csv_path'])
-            moniter.AppendLinesToCsv(net_data, all_config['network_csv_path'])
+            if self.global_arg['mul_agent']:
+                net_title, net_data = self.record.output_socl_net_per_frame(Ti + i)
+                if (Ti + i == 1):
+                    moniter.AppendToCsv(net_title, all_config['network_csv_path'])
+                moniter.AppendLinesToCsv(net_data, all_config['network_csv_path'])
             #  P1-05 增加Socil Network的结果输出
 
     def run_exp(self):
@@ -190,6 +200,7 @@ class MulControl:
                    + ["agent_avg"] \
                    + ['nkmax', 'nkmin', 'nkavg']
         moniter.AppendToCsv(csv_head, all_config['result_csv_path'][-1])
+        moniter.AppendToCsv(csv_head, all_config['area_csv_path'])
 
         csv_head_act = ['frame'] \
                        + ["agent%d" % (k) for k in range(self.global_arg['Nagent'])]
@@ -248,8 +259,11 @@ if __name__ == '__main__':
     all_config['result_csv_path'].append(
         os.path.join("result", exp_id, "res_%s_overview.csv" % (exp_id))
     )
+    # max_area输出
+    all_config['area_csv_path'] = os.path.join("result", exp_id, "res_%s_area_overview.csv" % (exp_id))
     # TODO NOTE cid 添加一个act的记录文件
     all_config['act_csv_path'] = os.path.join("result", exp_id, "act_overview.csv")
-    all_config['network_csv_path'] = os.path.join("result", exp_id, "network.csv")
+    if global_arg['mul_agent']:
+        all_config['network_csv_path'] = os.path.join("result", exp_id, "network.csv")
     main_control = MulControl()
     main_control.run_exp()  # 开始运行实验
