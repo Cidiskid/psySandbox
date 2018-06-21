@@ -5,6 +5,7 @@ import logging
 import random
 from copy import deepcopy
 import arg
+import pickle
 
 
 class State:
@@ -285,6 +286,26 @@ class Env:
 
     def getModelPeakDistri(self):
         return Env._getDistri(self.getAllPeakValue())
+
+    def nkmodel_save(self, filepath):
+        save_data = {
+            "N": self.N,
+            "K": self.K,
+            "P": self.P,
+            "T": self.T,
+            "model": self.models
+        }
+        with open(filepath, "wb") as fp:
+            pickle.dump(save_data, fp)
+
+    def nkmodel_load(self, filepath):
+        with open(filepath, "rb") as fp:
+            data = pickle.load(fp)
+        self.N = data['N']
+        self.K = data['K']
+        self.P = data['P']
+        self.T = data['T']
+        self.models = data['model']
 
 
 def get_area_sample_value(env, area, sample_num, state=None, dfs_r=0.5):

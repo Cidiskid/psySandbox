@@ -19,6 +19,9 @@ class MulControl:
         env_arg = arg.init_env_arg(self.global_arg)
         # TODO @wzk 需要增加nk的一个读入操作
         self.main_env = Env(env_arg)
+        if all_config['checkpoint']['env']['enable']:
+            self.main_env.nkmodel_load(all_config['checkpoint']['env']['path'])
+        self.main_env.nkmodel_save(all_config["nkmodel_path"])
         # 个体初始化
         self.agents = []
         state_start = State([0] * self.main_env.N)
@@ -30,8 +33,10 @@ class MulControl:
         # 社会网络初始化
         soclnet_arg = arg.init_soclnet_arg(self.global_arg, env_arg)
         self.socl_net = SoclNet(soclnet_arg)
-        # TODO @wzk 需要增加ScolNet的一个读入操作
         self.socl_net.flat_init()
+        if all_config['checkpoint']['socl_network']['enable']:
+            self.socl_net.power_load(all_config['checkpoint']['socl_network']['power'])
+            self.socl_net.relat_load(all_config['checkpoint']['socl_network']['relat'])
         self.record = Record()
 
     def run_meet_frame(self, Ti, Tfi, meet_name, member, host, up_info):
@@ -63,11 +68,8 @@ class MulControl:
             self.agents[i].meeting_now = ''
             self.agents[i].policy_now = ''
 
-        # TODO NOTE cid 增加SoclNet自然衰减
-        for u in range(len(self.agents)):
-            for v in range(u):
-                self.socl_net.relat[u][v]['weight'] = self.socl_net.arg['re_decr_r'] * self.socl_net.relat[u][v][
-                    'weight']
+        # NOTE cid 增加SoclNet自然衰减
+        self.socl_net.relat_cd(self.socl_net.arg['re_decr_r'])
 
         # 读取之前发起的集体行动
         all_host = set()
@@ -136,7 +138,7 @@ class MulControl:
                                                           last_arg,
                                                           Ti)
         meet_req = {}
-        # TODO NOTE cid传了个up_info进去，避免重复遍历
+        #  NOTE cid传了个up_info进去，避免重复遍历
         self.record.add_env_record(self.main_env, Ti, up_info)
         self.record.add_socl_net_record(self.socl_net, Ti)
         for i in range(self.global_arg['Ts']):
@@ -173,7 +175,7 @@ class MulControl:
                             + [up_info['nkinfo'][key] for key in ['max', 'min', 'avg']]
             moniter.AppendToCsv(csv_info_area, all_config['area_csv_path'])
 
-            # TODO NOTE cid 添加act信息(相应增加agent类里的变量）
+            # NOTE cid 添加act信息(相应增加agent类里的变量）
             act_list = [self.agents[k].policy_now + '/' + self.agents[k].meeting_now for k in
                         range(self.global_arg["Nagent"])]
             csv_info_act = [Ti + i] \
@@ -181,11 +183,12 @@ class MulControl:
             moniter.AppendToCsv(csv_info_act, all_config['act_csv_path'])
 
             # TODO @wzk 按stage输出
-            if self.global_arg['mul_agent']:
-                net_title, net_data = self.record.output_socl_net_per_frame(Ti + i)
-                if (Ti + i == 1):
-                    moniter.AppendToCsv(net_title, all_config['network_csv_path'])
-                moniter.AppendLinesToCsv(net_data, all_config['network_csv_path'])
+        if self.global_arg['mul_agent']:
+            #net_title, net_data = self.record.output_socl_net_per_frame(Ti + i)
+            power_save_path = os.path.join(all_config['network_csv_path'], "power_%04d.csv"%(Ti))
+            relat_save_path = os.path.join(all_config['network_csv_path'], "relat_%04d.csv"%(Ti))
+            self.socl_net.power_save(power_save_path)
+            self.socl_net.relat_save(relat_save_path)
             #  P1-05 增加Socil Network的结果输出
 
     def run_exp(self):
@@ -253,6 +256,7 @@ if __name__ == '__main__':
             "T" + str(global_arg['T']),
             "Ts" + str(global_arg['Ts'])
         ])
+    all_config['exp_id'] = exp_id
     try:
         os.mkdir(os.path.join("result", exp_id))
     except:
@@ -268,9 +272,14 @@ if __name__ == '__main__':
 
     # max_area输出
     all_config['area_csv_path'] = os.path.join("result", exp_id, "res_%s_area_overview.csv" % (exp_id))
-    # TODO NOTE cid 添加一个act的记录文件
+    # NOTE cid 添加一个act的记录文件
     all_config['act_csv_path'] = os.path.join("result", exp_id, "act_overview.csv")
     if global_arg['mul_agent']:
-        all_config['network_csv_path'] = os.path.join("result", exp_id, "network.csv")
+        all_config['network_csv_path'] = os.path.join("result", exp_id, "network_csv")
+        try:
+            os.mkdir(all_config['network_csv_path'])
+        except:
+            pass
+    all_config['nkmodel_path'] = os.path.join("result", exp_id, "nkmodel.pickle")
     main_control = MulControl()
     main_control.run_exp()  # 开始运行实验

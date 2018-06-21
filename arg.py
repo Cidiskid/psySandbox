@@ -15,7 +15,7 @@ def init_global_arg():
         "Ts": 16,  # 每个stage的帧数
         "Nagent": 10,  # Agent数量
         'D_env': False,  # 动态地形开关
-        'mul_agent': False  # 多人互动开关
+        'mul_agent': True   # 多人互动开关
     }
     return arg
 

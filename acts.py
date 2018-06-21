@@ -51,7 +51,7 @@ def act_zyzx(env, socl_net, agent_no, agent, record, T, Tfi):
         new_area = Area(agent.state_now, [False] * env.N, 0)
         new_area.info = get_area_sample_distr(env=env, area=new_area, state=agent.state_now,
                                               T_stmp=T + Tfi, sample_num=1, dfs_r=1)
-        # TODO NOTE cid 删除OB扰动，实际到达的点应该给一个客观值
+        # NOTE cid 删除OB扰动，实际到达的点应该给一个客观值
         # for k in new_area.info:
         #   new_area.info[k] = agent.agent_arg['ob'](new_area.info[k])
         agent.renew_m_info(new_area, T + Tfi)
@@ -69,14 +69,14 @@ def act_jhzx(env, socl_net, agent_no, agent, record, T, Tfi):  # 计划执行
     new_area = Area(agent.state_now, [False] * env.N, 0)
     new_area.info = get_area_sample_distr(env=env, area=new_area, state=agent.state_now,
                                           T_stmp=T + Tfi, sample_num=1, dfs_r=1)
-    # TODO NOTE cid 删除OB扰动，实际到达的点应该给一个客观值
+    # NOTE cid 删除OB扰动，实际到达的点应该给一个客观值
     # for k in new_area.info:
     #    new_area.info[k] = agent.agent_arg['ob'](new_area.info[k])
     agent.renew_m_info(new_area, T + Tfi)
     agent.policy_now = 'jhzx'
     # 计划执行完毕后，清空计划
     if agent.a_plan.is_arrive(agent.state_now):
-        # TODO NOTE cid 添加了清空计划前对计划的评价
+        #  NOTE cid 添加了清空计划前对计划的评价
         if not agent.a_plan is None:
             dF = env.getValue(agent.state_now) \
                  - record.get_agent_record(agent_no, agent.a_plan.info['T_acpt'])["value"]

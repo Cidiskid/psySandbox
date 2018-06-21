@@ -97,3 +97,27 @@ class SoclNet:
 
     def get_relat_out_degree_centrality(self):
         return nx.out_degree_centrality(nx.to_directed(self.relat))
+
+    @staticmethod
+    def network_save(ntwk, filepath):
+        nx.write_weighted_edgelist(ntwk, filepath, delimiter=",")
+
+    @staticmethod
+    def network_load(filepath):
+        return nx.read_weighted_edgelist(filepath, delimiter=",")
+
+    def relat_save(self, filepath):
+        SoclNet.network_save(self.relat, filepath)
+
+    def power_save(self, filepath):
+        SoclNet.network_save(self.power, filepath)
+
+    def relat_load(self, filepath):
+        self.relat = SoclNet.network_load(filepath)
+        assert isinstance(self.relat, nx.Graph)
+        assert self.relat.number_of_nodes() == self.arg["Nagent"]
+
+    def power_load(self, filepath):
+        self.power = SoclNet.network_load(filepath)
+        assert isinstance(self.power, nx.Graph)
+        assert self.power.number_of_nodes() == self.arg["Nagent"]

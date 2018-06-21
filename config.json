@@ -3,5 +3,16 @@
     "screanlv": "INFO",
     "filelv": "DEBUG",
     "filepath": "log.log"
+  },
+  "checkpoint": {
+    "env": {
+      "enable": false,
+      "path": ""
+    },
+    "socl_network": {
+      "enable": false,
+      "power": "",
+      "relat": ""
+    }
   }
 }

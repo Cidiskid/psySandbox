@@ -46,7 +46,7 @@ def sgl_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
     # 各种选项的概率
     # P1-06,07，P2-02 增加新act类型
     # TODO NOTE 修改dF计算方式，增加plan的影响
-    if agent.a_plan is not None:
+    if not agent.a_plan is None:
         goal = max(agent.get_max_area().info['max'], agent.a_plan.goal_value)
     else:
         goal = agent.get_max_area().info['max']
