@@ -41,12 +41,10 @@ def act_zyzx(env, socl_net, agent_no, agent, record, T, Tfi):
 
     cd = env.arg['ACT']['xdzx']['cool_down']
     # cd = env.arg['ACT']['xdzx']['cool_down'] ** (env.arg['P'] ** (env.arg['N'] - inter_area_mskn))
-    # 随着时间推移，容忍度越来越低
-    fake_stage = 16  # 静态测试时，fake一个stage的分隔
-    cd_T = Tfi
+    # 随着时间推移，容忍度越来越低 按stage来衰减
+    cd_T = T
     tol = kT0 * cd ** cd_T  # 容忍度
-    # logging.debug("cd:{}".format(cd))
-    # logging.debug("tol:{}".format(tol))
+    logging.debug("tol:{}".format(tol))
 
     if (dE >= 0 or (tol >= 1e-10 and exp(dE / tol) > uniform(0, 1))):
         agent.state_now = state_next
@@ -95,7 +93,7 @@ def act_jhzx(env, socl_net, agent_no, agent, record, T, Tfi):  # 计划执行
 
         agent.a_plan = None
 
-     # 添加当前行动记录
+    # 添加当前行动记录
     return socl_net, agent
 
 
@@ -176,7 +174,6 @@ def act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
         new_plan.info['T_acpt'] = T + Tfi
         agent.a_plan = new_plan
         agent.policy_now = 'jhjc_new'  # 添加当前行动记录,选择新计划
-
 
     return socl_net, agent
 

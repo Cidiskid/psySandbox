@@ -137,7 +137,7 @@ class MulControl:
                                                           Ti)
         meet_req = {}
         # TODO NOTE cid传了个up_info进去，避免重复遍历
-        self.record.add_env_record(self.main_env, Ti,up_info)
+        self.record.add_env_record(self.main_env, Ti, up_info)
         self.record.add_socl_net_record(self.socl_net, Ti)
         for i in range(self.global_arg['Ts']):
             logging.info("frame %3d , Ti:%3d" % (i, Ti))
@@ -146,21 +146,21 @@ class MulControl:
             meet_req = self.run_all_frame(Ti, i, meet_req, up_info)
 
             # 将信息添加到各个结果CSV中
-            for k in range(self.global_arg["Nagent"]):
-                csv_info = [
-                    Ti + i,
-                    self.main_env.getValue(self.agents[k].state_now, Ti),
-                    up_info['nkinfo']['max'],
-                    up_info['nkinfo']['min'],
-                    up_info['nkinfo']['avg']
-                ]
-                moniter.AppendToCsv(csv_info, all_config['result_csv_path'][k])
+            # for k in range(self.global_arg["Nagent"]):
+            #    csv_info = [
+            #        Ti + i,
+            #        self.main_env.getValue(self.agents[k].state_now, Ti),
+            #        up_info['nkinfo']['max'],
+            #        up_info['nkinfo']['min'],
+            #        up_info['nkinfo']['avg']
+            #    ]
+            #    moniter.AppendToCsv(csv_info, all_config['result_csv_path'][k])
 
             agent_value = [self.main_env.getValue(self.agents[k].state_now, Ti) for k in
                            range(self.global_arg["Nagent"])]
             csv_info = [Ti + i] \
                        + agent_value \
-                       + [sum(agent_value) / len(agent_value)] \
+                       + [sum(agent_value) / len(agent_value), max(agent_value), min(agent_value)] \
                        + [up_info['nkinfo'][key] for key in ['max', 'min', 'avg']]
             moniter.AppendToCsv(csv_info, all_config['result_csv_path'][-1])
 
@@ -192,13 +192,14 @@ class MulControl:
         up_info = {}
 
         # 单个agent的结果表
-        for k in range(self.global_arg["Nagent"]):
-            csv_head = ['frame', 'SSMfi', 'nkmax', 'nkmin', 'nkavg']
-            moniter.AppendToCsv(csv_head, all_config['result_csv_path'][k])
+        # for k in range(self.global_arg["Nagent"]):
+        #    csv_head = ['frame', 'SSMfi', 'nkmax', 'nkmin', 'nkavg']
+        #    moniter.AppendToCsv(csv_head, all_config['result_csv_path'][k])
         # 结果汇总表
+        # 添加agent max和agent min
         csv_head = ['frame'] \
                    + ["agent%d" % (k) for k in range(self.global_arg['Nagent'])] \
-                   + ["agent_avg"] \
+                   + ["agent_avg", "agent_max", "agent_min"] \
                    + ['nkmax', 'nkmin', 'nkavg']
         moniter.AppendToCsv(csv_head, all_config['result_csv_path'][-1])
         moniter.AppendToCsv(csv_head, all_config['area_csv_path'])
@@ -256,12 +257,15 @@ if __name__ == '__main__':
         os.mkdir(os.path.join("result", exp_id))
     except:
         pass
-    all_config['result_csv_path'] = [
-        os.path.join("result", exp_id, "res_%s_%02d.csv" % (exp_id, i)) for i in range(global_arg["Nagent"])
-    ]
+    # 关闭单个文档输出
+    # all_config['result_csv_path'] = [
+    #    os.path.join("result", exp_id, "res_%s_%02d.csv" % (exp_id, i)) for i in range(global_arg["Nagent"])
+    # ]
+    all_config['result_csv_path'] = []
     all_config['result_csv_path'].append(
         os.path.join("result", exp_id, "res_%s_overview.csv" % (exp_id))
     )
+
     # max_area输出
     all_config['area_csv_path'] = os.path.join("result", exp_id, "res_%s_area_overview.csv" % (exp_id))
     # TODO NOTE cid 添加一个act的记录文件

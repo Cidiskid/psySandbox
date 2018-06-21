@@ -239,10 +239,12 @@ class Env:
                 t = self.T_clock
             value_st = self.models["st"].getValue(state)
             value_ed = self.models["ed"].getValue(state)
-            return value_st + (value_ed - value_st) * t / self.T
+            value_ret = self.arg['value2ret'](value_st + (value_ed - value_st) * t / self.T)
+            return value_ret
         else:
             value_st = self.models["st"].getValue(state)
-            return value_st
+            value_ret = self.arg['value2ret'](value_st)
+            return value_ret
 
     def getAllValue(self):
         logging.info("getALLValue start")

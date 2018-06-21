@@ -45,7 +45,12 @@ def sgl_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
         return agent, soc_net, None
     # 各种选项的概率
     # P1-06,07，P2-02 增加新act类型
-    dF = agent.get_max_area().info['max'] - env.getValue(agent.state_now)
+    # TODO NOTE 修改dF计算方式，增加plan的影响
+    if agent.a_plan is not None:
+        goal = max(agent.get_max_area().info['max'], agent.a_plan.goal_value)
+    else:
+        goal = agent.get_max_area().info['max']
+    dF = goal - env.getValue(agent.state_now)
     prob = {"hqxx_xxjl": agent.frame_arg['ACT']['odds']['hqxx'](dF),
             "jhjc_tljc": agent.frame_arg['ACT']['odds']['jhjc'](dF),
             "xdzx_xtfg": agent.frame_arg['ACT']['odds']['xdzx'](dF)
@@ -82,7 +87,11 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
         return agent, soc_net, None
     # 各种选项的概率
     # P1-06,07，P2-02 增加新act类型
-    dF = agent.get_max_area().info['max'] - env.getValue(agent.state_now)
+    if agent.a_plan is not None:
+        goal = max(agent.get_max_area().info['max'], agent.a_plan.goal_value)
+    else:
+        goal = agent.get_max_area().info['max']
+    dF = goal - env.getValue(agent.state_now)
     prob = {"hqxx_xxjl": agent.frame_arg['ACT']['odds']['hqxx'](dF),
             "jhjc_tljc": agent.frame_arg['ACT']['odds']['jhjc'](dF),
             "xdzx_xtfg": agent.frame_arg['ACT']['odds']['xdzx'](dF),

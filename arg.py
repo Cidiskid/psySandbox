@@ -11,11 +11,11 @@ from env import Area
 
 def init_global_arg():
     arg = {
-        'T': 512,  # 模拟总时间
+        'T': 128,  # 模拟总时间
         "Ts": 16,  # 每个stage的帧数
         "Nagent": 10,  # Agent数量
         'D_env': False,  # 动态地形开关
-        'mul_agent': False   # 多人互动开关
+        'mul_agent': False  # 多人互动开关
     }
     return arg
 
@@ -23,12 +23,14 @@ def init_global_arg():
 def init_env_arg(global_arg):
     # NK model
     arg = {
-        'N': 8,
-        'K': 5,
-        'P': 3,  # 每个位点状态by Cid
+        'N': 16,
+        'K': 12,
+        'P': 2,  # 每个位点状态by Cid
         'T': global_arg['T'],  # 模拟总时间
         'Tp': global_arg['T'],  # 每个地形持续时间/地形变化耗时 by Cid
-        'dynamic': global_arg['D_env']  # 动态地形开关
+        'dynamic': global_arg['D_env'],  # 动态地形开关
+        'value2ret': (lambda real_value: real_value)
+        #'value2ret': (lambda real_value: (0.5 + 0.5 * tanh(5 * (real_value - 0.5))))
     }
 
     # 环境情景模型模块
@@ -64,18 +66,18 @@ def init_env_arg(global_arg):
             'do_plan_p': (
                 lambda st_val, dist, trgt: 0.5 + 0.5 * tanh(50 * (arg['plan']['eval'](dist, trgt) - st_val))),
             'kT0': 0.01,  # default 0.5
-            'cool_down': 0.995,  # default 0.99
+            'cool_down': 0.99,  # default 0.99
         },
         # 获取信息相关参数表
         'hqxx': {
-            "mask_n": 2,  # default 2 区域的方向夹角大小，指区域内的点中允许变化的位点数量
+            "mask_n": 6,  # default 2 区域的方向夹角大小，指区域内的点中允许变化的位点数量
             "dist": 3,  # default 3 区域半径，所有点和中心点的最大距离
             "dfs_p": 0.5,  # default 0.5 表示多大概率往深了走
             "sample_n": 50  # default 50 从区域中抽样的数量
         },
         # 计划拟定相关参数表
         'jhnd': {
-            "sample_num": 30,
+            "sample_num": 15,
             "dfs_r": 0.5
         },
         # 计划决策相关参数表
@@ -130,7 +132,7 @@ def init_agent_arg(global_arg, env_arg):
     # 适应分数观察值的偏差
     ob_a = 0.005  # default 0.025
     # arg["ob"] = (lambda x: Norm(x, ob_a / arg['a']['insight']))  # default公式
-    arg["ob"] = (lambda x: x)  #测试公式
+    arg["ob"] = (lambda x: x)  # 测试公式
 
     incr_rate = 0.03  # 关系增加速率
     arg["re_incr_g"] = (
@@ -212,7 +214,7 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     # arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0)  # TRUE行动，FALSE不行动
 
     # 行动执行的偏好分(1-3), default = 2
-    xdzx_c = 2  # 行动执行偏好常数
+    xdzx_c = 10  # 行动执行偏好常数
     xxhq_c = 0
     jhjc_c = 0
     whlj_c = 0
@@ -228,7 +230,7 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
             "jhjc": lambda dF: jhjc_c + odds_base * (0.5 + agent_arg['a']['xplt']) * (1 + jhjc_r * tanh(100 * dF)),
             "whlj": lambda dF: whlj_c + odds_base * (0.5 + agent_arg['a']['enable']),
             "dyjs": lambda dF: dyjs_c + odds_base * (0.5 + agent_arg['a']['enable']),
-            "tjzt": lambda dF: tjzt_c + odds_base * 0   # 先去掉这个选项
+            "tjzt": lambda dF: tjzt_c + odds_base * 0  # 先去掉这个选项
             # "tjzt": lambda dF: tjzt_c + odds_base * (0.5 + agent_arg['a']['enable'])
         },
         "p": {},
