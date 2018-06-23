@@ -44,7 +44,7 @@ def act_zyzx(env, socl_net, agent_no, agent, record, T, Tfi):
     # 随着时间推移，容忍度越来越低 按stage来衰减
     cd_T = T
     tol = kT0 * cd ** cd_T  # 容忍度
-    logging.debug("tol:{}".format(tol))
+    #logging.debug("tol:{}".format(tol))
 
     if (dE >= 0 or (tol >= 1e-10 and exp(dE / tol) > uniform(0, 1))):
         agent.state_now = state_next
@@ -57,12 +57,13 @@ def act_zyzx(env, socl_net, agent_no, agent, record, T, Tfi):
         agent.renew_m_info(new_area, T + Tfi)
 
     agent.policy_now = 'zyzx'  # 添加当前行动记录
+    logging.debug(agent.policy_now)
     return socl_net, agent
 
 
 def act_jhzx(env, socl_net, agent_no, agent, record, T, Tfi):  # 计划执行
     assert isinstance(agent.a_plan, Plan)
-    # 已经完成原地不动，在计划路径上移动一步，在计划路径外，向中心点移动
+    # 已经完成原地不动，在area上，向goal移动，在area外向area中心点移动
     agent.state_now = agent.a_plan.next_step(agent.state_now)
 
     # 将现有的点作为一个区域保存
@@ -73,6 +74,7 @@ def act_jhzx(env, socl_net, agent_no, agent, record, T, Tfi):  # 计划执行
     # for k in new_area.info:
     #    new_area.info[k] = agent.agent_arg['ob'](new_area.info[k])
     agent.renew_m_info(new_area, T + Tfi)
+    # 添加当前行动记录
     agent.policy_now = 'jhzx'
     # 计划执行完毕后，清空计划
     if agent.a_plan.is_arrive(agent.state_now):
@@ -93,7 +95,7 @@ def act_jhzx(env, socl_net, agent_no, agent, record, T, Tfi):  # 计划执行
 
         agent.a_plan = None
 
-    # 添加当前行动记录
+    logging.debug(agent.policy_now)
     return socl_net, agent
 
 
@@ -109,6 +111,7 @@ def act_xdzx(env, socl_net, agent_no, agent, record, T, Tfi):
     state_val = env.getValue(agent.state_now)
     plan_dist = agent.a_plan.len_to_finish(agent.state_now)
     plan_goal = agent.a_plan.goal_value
+    logging.debug("plan_dist: %s" % plan_dist)
     if env.arg['ACT']['xdzx']['do_plan_p'](state_val, plan_dist, plan_goal) > uniform(0, 1):
         return act_jhzx(env, socl_net, agent_no, agent, record, T, Tfi)
     else:
@@ -143,6 +146,7 @@ def act_hqxx(env, socl_net, agent_no, agent, record, T, Tfi):  # 获取信息
     # 把信息更新到状态中
     agent.renew_m_info(new_area, T + Tfi)
     agent.policy_now = 'hqxx'  # 添加当前行动记录
+    logging.debug(agent.policy_now)
     return socl_net, agent
 
 
@@ -173,8 +177,10 @@ def act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
             socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
         new_plan.info['T_acpt'] = T + Tfi
         agent.a_plan = new_plan
+        logging.debug("plan_dist: %s" % agent.a_plan.len_to_finish(agent.state_now))
         agent.policy_now = 'jhjc_new'  # 添加当前行动记录,选择新计划
 
+    logging.debug(agent.policy_now)
     return socl_net, agent
 
 
@@ -203,6 +209,8 @@ def act_commit(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
         agent.a_plan.info['T_acpt'] = T + Tfi
         agent.a_plan.info['commit'] = True
         agent.policy_now = 'commit_t'  # 添加当前行动记录
+
+    logging.debug(agent.policy_now)
     return socl_net, agent
 
 
@@ -242,6 +250,8 @@ def act_whlj(env, socl_net, agent_no, agent, record, T, Tfi):
         socl_net.relat_delta(aim, agent_no, delta)
 
     agent.policy_now = 'whlj'  # 添加当前行动记录
+
+    logging.debug(agent.policy_now)
     return socl_net, agent
 
 
@@ -256,9 +266,13 @@ def act_dyjs(env, socl_net, agent_no, agent, record, T, Tfi):
         socl_net.power_delta(to_power, aim, delta)
 
     agent.policy_now = 'dyjs'  # 添加当前行动记录
+
+    logging.debug(agent.policy_now)
     return socl_net, agent
 
 
 def act_tjzt(env, socl_net, agent_no, agent, record, T, Tfi):
     agent.policy_now = 'tjzt'  # 添加当前行动记录
+
+    logging.debug(agent.policy_now)
     return socl_net, agent

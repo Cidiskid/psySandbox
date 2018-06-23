@@ -40,8 +40,10 @@ class Plan:
             return Plan._next_step(state, self.area.center)
 
     def len_to_finish(self, state):
+        # 如果在区域内，计算点到目标到距离
         if self.area.state_in(state):
             return State.getDist(state, self.goal)
+        # 否则计算点到区域中心+区域中心到goal的距离
         else:
             return State.getDist(state, self.area.center) \
                    + State.getDist(self.area.center, self.goal)
@@ -56,15 +58,20 @@ class Agent:
         self.state_now = None
         self.policy_now = None
         self.meeting_now = None
-        start_area = Area(State(0), [True] * State.N, (State.P // 2) * State.N)
-        start_area.info = get_area_sample_distr(env=env,
-                                                area=start_area,
-                                                sample_num=env.arg['ACT']['hqxx']['sample_n'],
-                                                T_stmp=0)
-        for k in start_area.info:
-            start_area.info[k] = self.agent_arg['ob'](start_area.info[k])
-        self.frame_arg['PSM']['m-info'].append(start_area)
         self.a_plan = None
+
+        # 添加一个全局area
+        # start_area = Area(State(0), [True] * State.N, (State.P // 2) * State.N)
+        # start_area.info = get_area_sample_distr(env=env,
+        #                                        area=start_area,
+        #                                        sample_num=env.arg['ACT']['hqxx']['sample_n'],
+        #                                        T_stmp=0)
+
+
+        # for k in start_area.info:
+        #    start_area.info[k] = self.agent_arg['ob'](start_area.info[k])
+        #self.frame_arg['PSM']['m-info'].append(start_area)
+
 
     def ob(self, env, state):
         assert isinstance(env, Env) and isinstance(state, State)

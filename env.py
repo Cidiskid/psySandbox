@@ -241,11 +241,11 @@ class Env:
             value_st = self.models["st"].getValue(state)
             value_ed = self.models["ed"].getValue(state)
             value_ret = self.arg['value2ret'](value_st + (value_ed - value_st) * t / self.T)
-            return value_ret
+            return round(value_ret,4)
         else:
             value_st = self.models["st"].getValue(state)
             value_ret = self.arg['value2ret'](value_st)
-            return value_ret
+            return round(value_ret,4)
 
     def getAllValue(self):
         logging.info("getALLValue start")
@@ -261,7 +261,7 @@ class Env:
             for j in range(self.N):
                 for dl in [-1, 1]:
                     state_t = state.walk(j, dl)
-                    if (state_value < self.getValue(state_t)):
+                    if (state_value <= self.getValue(state_t)): # TODO cid 从<改为<=
                         flag = True
                         break
             if (not flag):
@@ -285,7 +285,10 @@ class Env:
         return Env._getDistri(self.getAllValue())
 
     def getModelPeakDistri(self):
-        return Env._getDistri(self.getAllPeakValue())
+        all_peak_value = self.getAllPeakValue()
+        # 为减少遍历数量，强行在这调用，要保证该函数只在mul_control中调用一次
+        # moniter.DrawHist(all_peak_value, all_config['peak_hist']) # 需要输出hist时调用
+        return Env._getDistri(all_peak_value)
 
     def nkmodel_save(self, filepath):
         save_data = {

@@ -13,9 +13,10 @@ def init_global_arg():
     arg = {
         'T': 128,  # 模拟总时间
         "Ts": 16,  # 每个stage的帧数
-        "Nagent": 10,  # Agent数量
+        "Nagent": 5,  # Agent数量
         'D_env': False,  # 动态地形开关
-        'mul_agent': True   # 多人互动开关
+        'mul_agent': False,  # 多人互动开关
+        'repeat': 3  # 重复几次同样参数的实验
     }
     return arg
 
@@ -23,14 +24,14 @@ def init_global_arg():
 def init_env_arg(global_arg):
     # NK model
     arg = {
-        'N': 16,
-        'K': 12,
-        'P': 2,  # 每个位点状态by Cid
+        'N': 5,
+        'K': 4,
+        'P': 3,  # 每个位点状态by Cid
         'T': global_arg['T'],  # 模拟总时间
         'Tp': global_arg['T'],  # 每个地形持续时间/地形变化耗时 by Cid
         'dynamic': global_arg['D_env'],  # 动态地形开关
-        'value2ret': (lambda real_value: real_value)
-        #'value2ret': (lambda real_value: (0.5 + 0.5 * tanh(5 * (real_value - 0.5))))
+        'value2ret': (lambda real_value:  (0.5 + 0.5 * tanh(5 * (real_value**3 - 0.5))))
+        # 'value2ret': (lambda real_value: (0.5 + 0.5 * tanh(5 * (real_value - 0.5))))
     }
 
     # 环境情景模型模块
@@ -43,11 +44,11 @@ def init_env_arg(global_arg):
     }
 
     # 区域相关参数，代表目标 已经无效
-    arg['area'] = {
-        "sample_num": 50,  # 抽样个数
-        "max_dist": 3,  # 游走距离
-        "mask_num": min(5, arg['N'])  # 可移动的位点限制
-    }
+    #arg['area'] = {
+    #    "sample_num": 50,  # 抽样个数
+    #    "max_dist": 3,  # 游走距离
+    #    "mask_num": min(5, arg['N'])  # 可移动的位点限制
+    #}
 
     plan_a = 0.1  # 距离对计划得分影响系数
     arg['plan'] = {
@@ -64,20 +65,20 @@ def init_env_arg(global_arg):
         'xdzx': {
             # 执行计划的概率
             'do_plan_p': (
-                lambda st_val, dist, trgt: 0.5 + 0.5 * tanh(50 * (arg['plan']['eval'](dist, trgt) - st_val))),
-            'kT0': 0.01,  # default 0.5
-            'cool_down': 0.99,  # default 0.99
+                lambda st_val, dist, trgt: 0.5 + 0.5 * tanh(100 * (arg['plan']['eval'](dist, trgt) - st_val))),
+            'kT0': 0.05,  # default 0.5
+            'cool_down': 0.95,  # default 0.99
         },
         # 获取信息相关参数表
         'hqxx': {
-            "mask_n": 6,  # default 2 区域的方向夹角大小，指区域内的点中允许变化的位点数量
-            "dist": 3,  # default 3 区域半径，所有点和中心点的最大距离
+            "mask_n": 2,  # default 2 区域的方向夹角大小，指区域内的点中允许变化的位点数量
+            "dist": 5,  # default 3 区域半径，所有点和中心点的最大距离
             "dfs_p": 0.5,  # default 0.5 表示多大概率往深了走
-            "sample_n": 50  # default 50 从区域中抽样的数量
+            "sample_n": 15  # default 50 从区域中抽样的数量
         },
         # 计划拟定相关参数表
         'jhnd': {
-            "sample_num": 15,
+            "sample_num": 5,
             "dfs_r": 0.5
         },
         # 计划决策相关参数表
@@ -122,17 +123,17 @@ def init_agent_arg(global_arg, env_arg):
     # 个体属性差异
     arg['a'] = {
         "insight": clip_rsmp(0.001, 0.999, Norm, mu=0.5, sigma=0.2),  # 环境感知能力
-        "act": Norm(0.5, 0.1),  # 行动意愿
-        "xplr": Norm(0.5, 0.3),  # 探索倾向
-        "xplt": Norm(0.5, 0.3),  # 利用倾向
-        "enable": Norm(0.5, 0.1),
+        "act": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.1),     # default Norm(0, 0.1),  # 行动意愿
+        "xplr": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.05),   # default Norm(0, 0.2),  # 探索倾向
+        "xplt": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.05),   # default Norm(0, 0.2),  # 利用倾向
+        "enable": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.1),  # default Norm(0, 0.1),
         "rmb": 64
     }
 
     # 适应分数观察值的偏差
-    ob_a = 0.005  # default 0.025
-    # arg["ob"] = (lambda x: Norm(x, ob_a / arg['a']['insight']))  # default公式
-    arg["ob"] = (lambda x: x)  # 测试公式
+    ob_a = 0.01  # default 0.025
+    arg["ob"] = (lambda x: Norm(x, ob_a / arg['a']['insight']))  # default公式
+    #arg["ob"] = (lambda x: x)  # 测试公式
 
     incr_rate = 0.03  # 关系增加速率
     arg["re_incr_g"] = (
@@ -214,23 +215,23 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     # arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0)  # TRUE行动，FALSE不行动
 
     # 行动执行的偏好分(1-3), default = 2
-    xdzx_c = 10  # 行动执行偏好常数
+    xdzx_c = 0  # 行动执行偏好常数
     xxhq_c = 0
     jhjc_c = 0
     whlj_c = 0
     dyjs_c = 0
     tjzt_c = 0
     odds_base = 1
-    xdzx_r = 1  # 行动执行随dF变化的最大幅度
+    xdzx_r = 2  # 行动执行随dF变化的最大幅度
     jhjc_r = 0.5  # 计划决策随dF变化的最大幅度
     arg['ACT'] = {
         'odds': {
-            "xdzx": lambda dF: xdzx_c + odds_base * (1 + xdzx_r * tanh(100 * dF)),
-            "hqxx": lambda dF: xxhq_c + odds_base * (0.5 + agent_arg['a']['xplr']),
-            "jhjc": lambda dF: jhjc_c + odds_base * (0.5 + agent_arg['a']['xplt']) * (1 + jhjc_r * tanh(100 * dF)),
-            "whlj": lambda dF: whlj_c + odds_base * (0.5 + agent_arg['a']['enable']),
-            "dyjs": lambda dF: dyjs_c + odds_base * (0.5 + agent_arg['a']['enable']),
-            "tjzt": lambda dF: tjzt_c + odds_base * 0  # 先去掉这个选项
+            "xdzx": lambda darea,dplan: -1+exp(xdzx_c + odds_base * (1 + xdzx_r * tanh(100 * dplan))),
+            "hqxx": lambda darea,dplan: -1+exp(xxhq_c + odds_base * (1 + agent_arg['a']['xplr'])),
+            "jhjc": lambda darea,dplan: -1+exp(jhjc_c + odds_base * (1 + agent_arg['a']['xplt']) * (1 + jhjc_r * tanh(50 * darea))),
+            "whlj": lambda darea,dplan: whlj_c + odds_base * (1 + agent_arg['a']['enable']),
+            "dyjs": lambda darea,dplan: dyjs_c + odds_base * (1 + agent_arg['a']['enable']),
+            "tjzt": lambda darea,dplan: tjzt_c + odds_base * 0  # 先去掉这个选项
             # "tjzt": lambda dF: tjzt_c + odds_base * (0.5 + agent_arg['a']['enable'])
         },
         "p": {},

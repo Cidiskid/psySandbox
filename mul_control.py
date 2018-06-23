@@ -2,7 +2,7 @@
 import logging
 import arg
 from group import Group, SoclNet
-from env import Env, Area, State
+from env import Env, Area, State, get_area_sample_distr
 from agent import Agent
 from copy import deepcopy
 import brain
@@ -10,6 +10,7 @@ import meeting
 from util.config import all_config
 from util import moniter
 from record import Record
+import numpy as np
 
 
 class MulControl:
@@ -24,12 +25,23 @@ class MulControl:
         self.main_env.nkmodel_save(all_config["nkmodel_path"])
         # 个体初始化
         self.agents = []
-        state_start = State([0] * self.main_env.N)
+        # 个体随机初始位置
         for i in range(self.global_arg["Nagent"]):
+            start_st_label = np.random.random_integers(0, self.main_env.P - 1, self.main_env.N)
+            state_start = State(start_st_label.tolist())
             self.agents.append(Agent(arg.init_agent_arg(self.global_arg,
                                                         self.main_env.arg),
                                      self.main_env))
             self.agents[i].state_now = deepcopy(state_start)
+
+            # TODO cid 去除了一开始给一个全局area，改为添加一个包含起点的点area
+            start_area = Area(self.agents[i].state_now, [False] * self.main_env.N, 0)
+            start_area.info = get_area_sample_distr(env=self.main_env, area=start_area, state=self.agents[i].state_now,
+                                                    T_stmp=0, sample_num=1, dfs_r=1)
+            self.agents[i].renew_m_info(start_area, 0)
+            self.a_plan = None
+            logging.info("state:%s, xplr:%.5s, xplt:%.5s" % (
+                self.agents[i].state_now, self.agents[i].agent_arg['a']['xplr'], self.agents[i].agent_arg['a']['xplt']))
         # 社会网络初始化
         soclnet_arg = arg.init_soclnet_arg(self.global_arg, env_arg)
         self.socl_net = SoclNet(soclnet_arg)
@@ -63,6 +75,7 @@ class MulControl:
                 Tp=Ti,
                 PSMfi=self.main_env.getValue(self.agents[i].state_now, Ti)
             )
+            logging.debug(self.agents[i].state_now)
         # 清空agent的行动和会议记录
         for i in range(len(self.agents)):
             self.agents[i].meeting_now = ''
@@ -160,11 +173,15 @@ class MulControl:
 
             agent_value = [self.main_env.getValue(self.agents[k].state_now, Ti) for k in
                            range(self.global_arg["Nagent"])]
-            csv_info = [Ti + i] \
-                       + agent_value \
-                       + [sum(agent_value) / len(agent_value), max(agent_value), min(agent_value)] \
-                       + [up_info['nkinfo'][key] for key in ['max', 'min', 'avg']]
-            moniter.AppendToCsv(csv_info, all_config['result_csv_path'][-1])
+            agent_avg = sum(agent_value) / len(agent_value)
+
+            csv_info_result = [Ti + i] \
+                              + agent_value \
+                              + [agent_avg, max(agent_value), min(agent_value)] \
+                              + [up_info['nkinfo'][key] for key in ['max', 'min', 'avg']] \
+                              + [(agent_avg - up_info['nkinfo']['min']) / (
+                    up_info['nkinfo']['max'] - up_info['nkinfo']['min'])]
+            moniter.AppendToCsv(csv_info_result, all_config['result_csv_path'][-1])
 
             # 输出max_area
             agent_max_area = [self.agents[k].get_max_area().info['max'] for k in
@@ -172,7 +189,7 @@ class MulControl:
             csv_info_area = [Ti + i] \
                             + agent_max_area \
                             + [sum(agent_max_area) / len(agent_max_area)] \
-                            + [up_info['nkinfo'][key] for key in ['max', 'min', 'avg']]
+                            + [up_info['nkinfo']['max']]
             moniter.AppendToCsv(csv_info_area, all_config['area_csv_path'])
 
             # NOTE cid 添加act信息(相应增加agent类里的变量）
@@ -184,9 +201,9 @@ class MulControl:
 
             # TODO @wzk 按stage输出
         if self.global_arg['mul_agent']:
-            #net_title, net_data = self.record.output_socl_net_per_frame(Ti + i)
-            power_save_path = os.path.join(all_config['network_csv_path'], "power_%04d.csv"%(Ti))
-            relat_save_path = os.path.join(all_config['network_csv_path'], "relat_%04d.csv"%(Ti))
+            # net_title, net_data = self.record.output_socl_net_per_frame(Ti + i)
+            power_save_path = os.path.join(all_config['network_csv_path'], "power_%04d.csv" % (Ti))
+            relat_save_path = os.path.join(all_config['network_csv_path'], "relat_%04d.csv" % (Ti))
             self.socl_net.power_save(power_save_path)
             self.socl_net.relat_save(relat_save_path)
             #  P1-05 增加Socil Network的结果输出
@@ -200,19 +217,27 @@ class MulControl:
         #    moniter.AppendToCsv(csv_head, all_config['result_csv_path'][k])
         # 结果汇总表
         # 添加agent max和agent min
-        csv_head = ['frame'] \
-                   + ["agent%d" % (k) for k in range(self.global_arg['Nagent'])] \
-                   + ["agent_avg", "agent_max", "agent_min"] \
-                   + ['nkmax', 'nkmin', 'nkavg']
-        moniter.AppendToCsv(csv_head, all_config['result_csv_path'][-1])
-        moniter.AppendToCsv(csv_head, all_config['area_csv_path'])
+        csv_head_result = ['frame'] \
+                          + ["agent%d" % (k) for k in range(self.global_arg['Nagent'])] \
+                          + ["agent_avg", "agent_max", "agent_min"] \
+                          + ['peakmax', 'peakmin', 'peakavg'] \
+                          + ['adj_avg']
+        moniter.AppendToCsv(csv_head_result, all_config['result_csv_path'][-1])
+        csv_head_area = ['frame'] \
+                        + ["agent%d" % (k) for k in range(self.global_arg['Nagent'])] \
+                        + ["agent_avg"] \
+                        + ['nkmax']
+        moniter.AppendToCsv(csv_head_area, all_config['area_csv_path'])
 
         csv_head_act = ['frame'] \
                        + ["agent%d" % (k) for k in range(self.global_arg['Nagent'])]
         moniter.AppendToCsv(csv_head_act, all_config['act_csv_path'])
 
         stage_num = self.global_arg['T'] // self.global_arg['Ts']
-        up_info['nkinfo'] = self.main_env.getModelDistri()
+
+        up_info['nkinfo'] = self.main_env.getModelPeakDistri()     # 将nkinfo变为peakvalue
+        #all_peak_value = self.main_env.getAllPeakValue()
+        #moniter.DrawHist(all_peak_value, all_config['peak_hist'])
         for i in range(stage_num):
             Ti = i * self.global_arg['Ts'] + 1
             logging.info("stage %3d, Ti:%3d" % (i, Ti))
@@ -236,50 +261,56 @@ if __name__ == '__main__':
     global_arg = arg.init_global_arg()
     env_arg = arg.init_env_arg(global_arg)
     # 修改了single情况下的文件名
-    if global_arg['mul_agent']:
-        exp_id = "_".join([
-            "mul_agent_view",
-            time.strftime("%Y%m%d-%H%M%S"),
-            "N" + str(env_arg['N']),
-            "K" + str(env_arg['K']),
-            "P" + str(env_arg['P']),
-            "T" + str(global_arg['T']),
-            "Ts" + str(global_arg['Ts'])
-        ])
-    else:
-        exp_id = "_".join([
-            "sgl_agent_view",
-            time.strftime("%Y%m%d-%H%M%S"),
-            "N" + str(env_arg['N']),
-            "K" + str(env_arg['K']),
-            "P" + str(env_arg['P']),
-            "T" + str(global_arg['T']),
-            "Ts" + str(global_arg['Ts'])
-        ])
-    all_config['exp_id'] = exp_id
-    try:
-        os.mkdir(os.path.join("result", exp_id))
-    except:
-        pass
-    # 关闭单个文档输出
-    # all_config['result_csv_path'] = [
-    #    os.path.join("result", exp_id, "res_%s_%02d.csv" % (exp_id, i)) for i in range(global_arg["Nagent"])
-    # ]
-    all_config['result_csv_path'] = []
-    all_config['result_csv_path'].append(
-        os.path.join("result", exp_id, "res_%s_overview.csv" % (exp_id))
-    )
-
-    # max_area输出
-    all_config['area_csv_path'] = os.path.join("result", exp_id, "res_%s_area_overview.csv" % (exp_id))
-    # NOTE cid 添加一个act的记录文件
-    all_config['act_csv_path'] = os.path.join("result", exp_id, "act_overview.csv")
-    if global_arg['mul_agent']:
-        all_config['network_csv_path'] = os.path.join("result", exp_id, "network_csv")
+    for exp_num in range(global_arg['repeat']):
+        if global_arg['mul_agent']:
+            exp_id = "_".join([
+                "mul",
+                time.strftime("%Y%m%d-%H%M%S"),
+                "exp"+str(exp_num),
+                "N" + str(env_arg['N']),
+                "K" + str(env_arg['K']),
+                "P" + str(env_arg['P']),
+                "T" + str(global_arg['T']),
+                "Ts" + str(global_arg['Ts'])
+            ])
+        else:
+            exp_id = "_".join([
+                "sgl",
+                time.strftime("%Y%m%d-%H%M%S"),
+                "exp"+str(exp_num),
+                "N" + str(env_arg['N']),
+                "K" + str(env_arg['K']),
+                "P" + str(env_arg['P']),
+                "T" + str(global_arg['T']),
+                "Ts" + str(global_arg['Ts'])
+            ])
+        all_config['exp_id'] = exp_id
         try:
-            os.mkdir(all_config['network_csv_path'])
+            os.mkdir(os.path.join("result", exp_id))
         except:
             pass
-    all_config['nkmodel_path'] = os.path.join("result", exp_id, "nkmodel.pickle")
-    main_control = MulControl()
-    main_control.run_exp()  # 开始运行实验
+        # 关闭单个文档输出
+        # all_config['result_csv_path'] = [
+        #    os.path.join("result", exp_id, "res_%s_%02d.csv" % (exp_id, i)) for i in range(global_arg["Nagent"])
+        # ]
+        all_config['result_csv_path'] = []
+        all_config['result_csv_path'].append(
+            os.path.join("result", exp_id, "res_%s_value.csv" % (exp_id))
+        )
+
+        # max_area输出
+        all_config['area_csv_path'] = os.path.join("result", exp_id, "res_%s_area.csv" % (exp_id))
+        # NOTE cid 添加一个act的记录文件
+        all_config['act_csv_path'] = os.path.join("result", exp_id, "res_%s_act.csv" % (exp_id))
+        if global_arg['mul_agent']:
+            all_config['network_csv_path'] = os.path.join("result", exp_id, "network.csv")
+            try:
+                os.mkdir(all_config['network_csv_path'])
+            except:
+                pass
+        all_config['nkmodel_path'] = os.path.join("result", exp_id, "nkmodel.pickle")
+        all_config['peak_hist'] = os.path.join("result", exp_id, "peak_hist.png")
+
+        logging.info("run exp %3d" % exp_num)
+        main_control = MulControl()
+        main_control.run_exp()  # 开始运行实验

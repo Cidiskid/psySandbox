@@ -1,4 +1,10 @@
-from util.config import all_config
+# -*- coding:utf-8 -*-
+import sys
+
+reload(sys)
+sys.setdefaultencoding('utf8')
+
+from config import all_config
 import logging
 import time
 import csv
@@ -51,30 +57,36 @@ def Draw2dScatterWithValue(point_pairs):
     plt.show()
 
 
-def DrawHist(nums, label=None):
+def DrawHist(nums, filename, label=None):
     import numpy as np
     import matplotlib.pyplot as plt
     from matplotlib import mlab
 
     x = np.array(nums)
-    n_bins = int(np.sqrt(len(x) * 2))
+    total = len(x)
+    n_bins = 20
+    # n_bins = int(np.sqrt(len(x) * 2))
     mu = x.mean()
     sigma = x.std()
-    logging.info("len(x)= %d, n_bins= %d, mu= %0.3f, sigma= %0.3f" % (len(x), n_bins, mu, sigma))
-    fig, ax = plt.subplots(figsize=(8, 4))
+    # logging.info("len(x)= %d, n_bins= %d, mu= %0.3f, sigma= %0.3f" % (len(x), n_bins, mu, sigma))
+    # fig, ax = plt.subplots(figsize=(8, 4))
 
-    # plot the cumulative histogram
-    n, bins, patches = ax.hist(x, n_bins, normed=1, histtype='stepfilled', label=label, alpha=0.7)
+    # plot the histogram
+    n, bins, patches = plt.hist(x, n_bins, density=False, cumulative=False, histtype='bar', rwidth=0.8, label=label,
+                                alpha=0.7)
 
     # Add a line showing the expected distribution.
-    y = mlab.normpdf(bins, mu, sigma)
-    ax.plot(bins, y, 'k--', linewidth=1.5)
+    # y = mlab.normpdf(bins, mu, sigma)
+    # plt.plot(bins, y, 'k--', linewidth=1.5)
 
     # tidy up the figure
-    ax.grid(True)
-    ax.legend(loc='right')
-    ax.set_title(r'Histogram: $\mu=%0.3f$, $\sigma=%0.3f$' % (mu, sigma))
-    plt.show()
+    # ax.grid(True)
+    # ax.legend(loc='right')
+    plt.title(r'Peak Histogram: $\mu=%0.4f$, $\sigma=%0.4f$, total=%s' % (mu, sigma, total))
+    plt.xlabel('Peak Value')
+    plt.ylabel('Peak Number')
+    plt.savefig(filename)
+    # plt.show()
 
 
 def animation_demo():

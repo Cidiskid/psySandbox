@@ -40,21 +40,22 @@ def single_ver1(env, agent, Ti, Tfi, agent_no):
 # 单人版的行动逻辑
 def sgl_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
     assert isinstance(env, Env) and isinstance(soc_net, SoclNet) and isinstance(agent, Agent)
-    # P2-01 添加对arg['PROC']['action']的判断
+    # 添加对arg['PROC']['action']的判断
     if not agent.frame_arg["PROC"]['action']:
         return agent, soc_net, None
     # 各种选项的概率
-    # P1-06,07，P2-02 增加新act类型
-    # TODO NOTE 修改dF计算方式，增加plan的影响
+    # TODO NOTE 修改影响odds的机制，以plan和area作为参数
     if not agent.a_plan is None:
-        goal = max(agent.get_max_area().info['max'], agent.a_plan.goal_value)
+        dplan = max(0, agent.a_plan.goal_value - env.getValue(agent.state_now))
     else:
-        goal = agent.get_max_area().info['max']
-    dF = goal - env.getValue(agent.state_now)
-    prob = {"hqxx_xxjl": agent.frame_arg['ACT']['odds']['hqxx'](dF),
-            "jhjc_tljc": agent.frame_arg['ACT']['odds']['jhjc'](dF),
-            "xdzx_xtfg": agent.frame_arg['ACT']['odds']['xdzx'](dF)
+        dplan = 0
+
+    darea = agent.get_max_area().info['max'] - env.getValue(agent.state_now)
+    prob = {"hqxx_xxjl": agent.frame_arg['ACT']['odds']['hqxx'](darea, dplan),
+            "jhjc_tljc": agent.frame_arg['ACT']['odds']['jhjc'](darea, dplan),
+            "xdzx_xtfg": agent.frame_arg['ACT']['odds']['xdzx'](darea, dplan)
             }
+    logging.debug("agent_no:%.d, dplan:%.5s, darea:%.5s,prob:%s" % (agent_no, dplan, darea, prob))
 
     use_police = util.random_choice(prob)  # 根据概率参数随机选择一种行动策略
     meet_info = None
