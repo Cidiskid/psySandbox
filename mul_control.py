@@ -25,8 +25,10 @@ class MulControl:
         self.main_env.nkmodel_save(all_config["nkmodel_path"])
         # 个体初始化
         self.agents = []
-        # 个体随机初始位置
+        csv_head_agent = ['agent_no'] + ['st_state'] + ['insight'] + ['xplr'] + ['xplt'] + ['enable']
+        moniter.AppendToCsv(csv_head_agent, all_config['agent_csv_path'])
         for i in range(self.global_arg["Nagent"]):
+            # 个体随机初始位置
             start_st_label = np.random.random_integers(0, self.main_env.P - 1, self.main_env.N)
             state_start = State(start_st_label.tolist())
             self.agents.append(Agent(arg.init_agent_arg(self.global_arg,
@@ -40,8 +42,21 @@ class MulControl:
                                                     T_stmp=0, sample_num=1, dfs_r=1)
             self.agents[i].renew_m_info(start_area, 0)
             self.a_plan = None
-            logging.info("state:%s, xplr:%.5s, xplt:%.5s" % (
-                self.agents[i].state_now, self.agents[i].agent_arg['a']['xplr'], self.agents[i].agent_arg['a']['xplt']))
+            logging.info("state:%s, insight:%.5s ,xplr:%.5s, xplt:%.5s, enable:%.5s" % (
+                self.agents[i].state_now,
+                self.agents[i].agent_arg['a']['insight'],
+                self.agents[i].agent_arg['a']['xplr'],
+                self.agents[i].agent_arg['a']['xplt'],
+                self.agents[i].agent_arg['a']['enable']))
+            # 记录agent信息
+            csv_info_agent = ['agent%d' % i] \
+                             + [self.agents[i].state_now] \
+                             + [self.agents[i].agent_arg['a']['insight']] \
+                             + [self.agents[i].agent_arg['a']['xplr']] \
+                             + [self.agents[i].agent_arg['a']['xplt']] \
+                             + [self.agents[i].agent_arg['a']['enable']]
+            moniter.AppendToCsv(csv_info_agent, all_config['agent_csv_path'])
+
         # 社会网络初始化
         soclnet_arg = arg.init_soclnet_arg(self.global_arg, env_arg)
         self.socl_net = SoclNet(soclnet_arg)
@@ -75,7 +90,7 @@ class MulControl:
                 Tp=Ti,
                 PSMfi=self.main_env.getValue(self.agents[i].state_now, Ti)
             )
-            logging.debug(self.agents[i].state_now)
+        logging.debug("agent copy finished")
         # 清空agent的行动和会议记录
         for i in range(len(self.agents)):
             self.agents[i].meeting_now = ''
@@ -235,9 +250,11 @@ class MulControl:
 
         stage_num = self.global_arg['T'] // self.global_arg['Ts']
 
-        up_info['nkinfo'] = self.main_env.getModelPeakDistri()     # 将nkinfo变为peakvalue
-        #all_peak_value = self.main_env.getAllPeakValue()
-        #moniter.DrawHist(all_peak_value, all_config['peak_hist'])
+        # self.main_env.getModelDistri() # 为了作图，仅测试时调用！！
+        up_info['nkinfo'] = self.main_env.getModelPeakDistri()  # 将nkinfo变为peakvalue
+        # all_peak_value = self.main_env.getAllPeakValue()
+        # moniter.DrawHist(all_peak_value, all_config['peak_hist'])
+
         for i in range(stage_num):
             Ti = i * self.global_arg['Ts'] + 1
             logging.info("stage %3d, Ti:%3d" % (i, Ti))
@@ -266,7 +283,7 @@ if __name__ == '__main__':
             exp_id = "_".join([
                 "mul",
                 time.strftime("%Y%m%d-%H%M%S"),
-                "exp"+str(exp_num),
+                "exp" + str(exp_num),
                 "N" + str(env_arg['N']),
                 "K" + str(env_arg['K']),
                 "P" + str(env_arg['P']),
@@ -277,7 +294,7 @@ if __name__ == '__main__':
             exp_id = "_".join([
                 "sgl",
                 time.strftime("%Y%m%d-%H%M%S"),
-                "exp"+str(exp_num),
+                "exp" + str(exp_num),
                 "N" + str(env_arg['N']),
                 "K" + str(env_arg['K']),
                 "P" + str(env_arg['P']),
@@ -309,7 +326,9 @@ if __name__ == '__main__':
             except:
                 pass
         all_config['nkmodel_path'] = os.path.join("result", exp_id, "nkmodel.pickle")
+        all_config['agent_csv_path'] = os.path.join("result", exp_id, "agent_attribute.csv")
         all_config['peak_hist'] = os.path.join("result", exp_id, "peak_hist.png")
+        all_config['total_hist'] = os.path.join("result", exp_id, "total_hist.png")
 
         logging.info("run exp %3d" % exp_num)
         main_control = MulControl()

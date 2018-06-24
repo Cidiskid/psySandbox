@@ -85,9 +85,11 @@ class Record:
         return info
     def get_agent_record(self, agent_no, T):
         assert 0 <= agent_no < self.Nagent
+        logging.debug("get_agent_record start")
         ret_t = 0
         for i in range(len(self.agents[agent_no])):
             if T < self.agents[agent_no][i][0]:
+                logging.debug("get_agent_record end")
                 return self.agents[agent_no][ret_t][1]
             ret_t = i
         return  self.agents[agent_no][ret_t][1]

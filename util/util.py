@@ -1,6 +1,6 @@
 import os
 from random import normalvariate as Norm
-from random import uniform
+from random import uniform, paretovariate
 from math import exp, pow, tanh, cos, pi
 from copy import deepcopy
 

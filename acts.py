@@ -34,7 +34,8 @@ def act_zyzx(env, socl_net, agent_no, agent, record, T, Tfi):
     global_area = Area(agent.state_now, [True] * env.N, env.P // 2 * env.N)
     state_next = global_area.rand_walk(agent.state_now)
     value_now = env.getValue(agent.state_now, T)
-    value_next = agent.agent_arg['ob'](env.getValue(state_next, T))
+    value_next = env.arg['ACT']['zyzx']['ob'](env.getValue(state_next, T))  # 改为所有人是一样的ob影响参数
+    #agent.agent_arg['ob'](env.getValue(state_next, T))
 
     dE = value_next - value_now
     kT0 = env.arg['ACT']['xdzx']['kT0']

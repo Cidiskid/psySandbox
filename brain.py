@@ -88,17 +88,20 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
         return agent, soc_net, None
     # 各种选项的概率
     # P1-06,07，P2-02 增加新act类型
-    if agent.a_plan is not None:
-        goal = max(agent.get_max_area().info['max'], agent.a_plan.goal_value)
+    # TODO NOTE 修改影响odds的机制，以plan和area作为参数
+    if not agent.a_plan is None:
+        dplan = max(0, agent.a_plan.goal_value - env.getValue(agent.state_now))
     else:
-        goal = agent.get_max_area().info['max']
-    dF = goal - env.getValue(agent.state_now)
-    prob = {"hqxx_xxjl": agent.frame_arg['ACT']['odds']['hqxx'](dF),
-            "jhjc_tljc": agent.frame_arg['ACT']['odds']['jhjc'](dF),
-            "xdzx_xtfg": agent.frame_arg['ACT']['odds']['xdzx'](dF),
-            "whlj": agent.frame_arg['ACT']['odds']['whlj'](dF),
-            "dyjs": agent.frame_arg['ACT']['odds']['dyjs'](dF),
-            "tjzt": agent.frame_arg['ACT']['odds']['tjzt'](dF)}
+        dplan = 0
+    darea = agent.get_max_area().info['max'] - env.getValue(agent.state_now)
+    prob = {"hqxx_xxjl": agent.frame_arg['ACT']['odds']['hqxx'](darea, dplan),
+            "jhjc_tljc": agent.frame_arg['ACT']['odds']['jhjc'](darea, dplan),
+            "xdzx_xtfg": agent.frame_arg['ACT']['odds']['xdzx'](darea, dplan),
+            "whlj": agent.frame_arg['ACT']['odds']['whlj'](darea, dplan),
+            "dyjs": agent.frame_arg['ACT']['odds']['dyjs'](darea, dplan),
+            "tjzt": agent.frame_arg['ACT']['odds']['tjzt'](darea, dplan)
+            }
+    logging.debug("agent_no:%.d, dplan:%.5s, darea:%.5s,prob:%s" % (agent_no, dplan, darea, prob))
 
     use_police = util.random_choice(prob)  # 根据概率参数随机选择一种行动策略
     meet_info = None

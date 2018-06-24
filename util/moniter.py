@@ -86,6 +86,7 @@ def DrawHist(nums, filename, label=None):
     plt.xlabel('Peak Value')
     plt.ylabel('Peak Number')
     plt.savefig(filename)
+    plt.close()
     # plt.show()
 
 

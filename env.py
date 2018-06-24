@@ -217,12 +217,15 @@ class Env:
         self.P = arg['P']
         State.N = self.N
         State.P = self.P
-        if arg['dynamic']:
-            self.models = {"st": NKmodel(self.N, self.K, self.P),
-                           "ed": NKmodel(self.N, self.K, self.P)}
-        else:
-            t_m = NKmodel(self.N, self.K, self.P)
-            self.models = {"st": t_m, "ed": t_m}
+        self.models = {"st": NKmodel(self.N, self.K, self.P),
+                       "ed": NKmodel(self.N, self.K, self.P)
+                       }
+        # if arg['dynamic']:
+        #    self.models = {"st": NKmodel(self.N, self.K, self.P),
+        #                   "ed": NKmodel(self.N, self.K, self.P)}
+        # else:
+        #    t_m = NKmodel(self.N, self.K, self.P)
+        #    self.models = {"st": t_m, "ed": t_m}
         self.T = arg['T']
         self.T_clock = 0
         self.ESM = arg['ESM']
@@ -234,25 +237,31 @@ class Env:
     # 动态过程的实现，通过getValue改变
     def getValue(self, state, t=None):
         assert (state.N == self.N and state.P == self.P)
-        # 双重修改了/先留着把
+        # 双重修改了/先留着把 TODO cid 修改动态条件下value合成机制
         if (self.dynamic):
             if (t is None):
                 t = self.T_clock
             value_st = self.models["st"].getValue(state)
             value_ed = self.models["ed"].getValue(state)
-            value_ret = self.arg['value2ret'](value_st + (value_ed - value_st) * t / self.T)
-            return round(value_ret,4)
+            w_st = 0.6  # default 0.6
+            w_ed = 0.4  # default 0.4
+            value_ret = self.arg['value2ret'](
+                w_st * value_st + w_ed * value_ed + (w_st - w_ed) * (value_ed - value_st) * t / self.T)
+            return round(value_ret, 4)
         else:
             value_st = self.models["st"].getValue(state)
-            value_ret = self.arg['value2ret'](value_st)
-            return round(value_ret,4)
+            value_ed = self.models["ed"].getValue(state)
+            w_st = 0.5  # default 0.5
+            w_ed = 0.5  # default 0.5
+            value_ret = self.arg['value2ret'](w_st * value_st + w_ed * value_ed)
+            return round(value_ret, 4)
 
     def getAllValue(self):
         logging.info("getALLValue start")
         return [self.getValue(State(i)) for i in range(self.P ** self.N)]
 
     def getAllPeakValue(self):
-        logging.debug("start")
+        logging.info("getALLPeakValue start")
         peak_value = []
         for i in range(self.P ** self.N):
             state = State(i)
@@ -261,7 +270,7 @@ class Env:
             for j in range(self.N):
                 for dl in [-1, 1]:
                     state_t = state.walk(j, dl)
-                    if (state_value <= self.getValue(state_t)): # TODO cid 从<改为<=
+                    if (state_value <= self.getValue(state_t)):  # TODO cid 从<改为<=
                         flag = True
                         break
             if (not flag):
@@ -282,12 +291,15 @@ class Env:
         }
 
     def getModelDistri(self):
-        return Env._getDistri(self.getAllValue())
+        all_value = self.getAllValue()
+        # 为减少遍历数量，强行在这调用，请在仅测试时调用！！
+        # moniter.DrawHist(all_value, all_config['total_hist'])  # 需要输出hist时调用
+        return Env._getDistri(all_value)
 
     def getModelPeakDistri(self):
         all_peak_value = self.getAllPeakValue()
         # 为减少遍历数量，强行在这调用，要保证该函数只在mul_control中调用一次
-        # moniter.DrawHist(all_peak_value, all_config['peak_hist']) # 需要输出hist时调用
+        # moniter.DrawHist(all_peak_value, all_config['peak_hist'])  # 需要输出hist时调用
         return Env._getDistri(all_peak_value)
 
     def nkmodel_save(self, filepath):
