@@ -156,7 +156,7 @@ def act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
     assert isinstance(record, Record) and isinstance(socl_net, SoclNet)
     new_plan_value = env.arg['ACT']['jhjc']["plan_eval"](new_plan.goal_value,
                                                          new_plan.len_to_finish(agent.state_now))
-    org_plan_value = -1
+    org_plan_value = env.getValue(agent.state_now)  # TODO cid 如果没有a_plan，至少以当前位置作为plan value
     if not agent.a_plan is None:
         org_plan_value = env.arg['ACT']['jhjc']["plan_eval"](agent.a_plan.goal_value,
                                                              agent.a_plan.len_to_finish(agent.state_now))

@@ -11,12 +11,12 @@ from env import Area
 
 def init_global_arg():
     arg = {
-        'T': 128,  # 模拟总时间
-        "Ts": 16,  # 每个stage的帧数
+        'T': 256,  # 模拟总时间
+        "Ts": 8,  # 每个stage的帧数
         "Nagent": 20,  # Agent数量
         'D_env': False,  # 动态地形开关
         'mul_agent': False,  # 多人互动开关
-        'repeat': 1  # 重复几次同样参数的实验
+        'repeat': 5  # 重复几次同样参数的实验
     }
     return arg
 
@@ -53,7 +53,7 @@ def init_env_arg(global_arg):
     #    "mask_num": min(5, arg['N'])  # 可移动的位点限制
     # }
 
-    plan_a = 0.025  # default 0.1 距离对计划得分影响系数
+    plan_a = 0.1  # default 0.1 距离对计划得分影响系数
     arg['plan'] = {
         # 计划得分
         'eval': (lambda dist, trgt: trgt * (1 - plan_a * (1 - trgt)) ** dist)
@@ -63,13 +63,13 @@ def init_env_arg(global_arg):
     arg['ACT'] = {
         # 行动执行相关参数表
         'zyzx': {
-            'ob': (lambda x: Norm(x, 0.15))
+            'ob': (lambda x: Norm(x, 0.2))  # 自由执行的ob误差为所有agent相同的固定值
             # zyzx自由执行相关参数
         },
         'xdzx': {
             # 执行计划的概率
             'do_plan_p': (
-                lambda st_val, dist, trgt: 0.5 + 0.5 * tanh(100 * (arg['plan']['eval'](dist, trgt) - st_val))),
+                lambda st_val, dist, trgt: 0.5 + 0.5 * tanh(50 * (arg['plan']['eval'](dist, trgt) - st_val))),
             'kT0': 0.05,  # default 0.5
             'cool_down': 0.95,  # default 0.99
         },
@@ -78,7 +78,7 @@ def init_env_arg(global_arg):
             "mask_n": 2,  # default 2 区域的方向夹角大小，指区域内的点中允许变化的位点数量
             "dist": 6,  # default 3 区域半径，所有点和中心点的最大距离
             "dfs_p": 0.5,  # default 0.5 表示多大概率往深了走
-            "sample_n": 20  # default 50 从区域中抽样的数量
+            "sample_n": 30  # default 50 从区域中抽样的数量
         },
         # 计划拟定相关参数表
         'jhnd': {
@@ -135,8 +135,8 @@ def init_agent_arg(global_arg, env_arg):
     }
 
     # 适应分数观察值的偏差
-    ob_a = 0.2  # default 0.025
-    arg["ob"] = (lambda x: Norm(x, ob_a * (1 - arg['a']['insight'])))  # default公式
+    ob_a = 0.25  # default 0.025
+    arg["ob"] = (lambda x: Norm(x, ob_a * (1 - arg['a']['insight'])))  # 更换为1-a_insight
     # arg["ob"] = (lambda x: x)  # 测试公式
 
     incr_rate = 0.03  # 关系增加速率
@@ -232,7 +232,7 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     dyjs_ob = 1 + agent_arg['a']['enable']
     tjzt_ob = 1 + agent_arg['a']['enable']
     xdzx_rp = 1  # 行动执行随pan变化的最大幅度,dplan一定>0
-    jhjc_ra = 0.2  # 计划决策随area变化的最大幅度
+    jhjc_ra = 0.5  # 计划决策随area变化的最大幅度
     arg['ACT'] = {
         'odds': {
             "xdzx": lambda darea, dplan: -1 + exp(xdzx_c + xdzx_ob * (1 + xdzx_rp * tanh(50 * dplan))),
