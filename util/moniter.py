@@ -1,10 +1,10 @@
 # -*- coding:utf-8 -*-
 import sys
 
-reload(sys)
-sys.setdefaultencoding('utf8')
+#reload(sys)
+#sys.setdefaultencoding('utf8')
 
-from config import all_config
+from util.config import all_config
 import logging
 import time
 import csv
