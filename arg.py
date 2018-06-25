@@ -14,7 +14,7 @@ def init_global_arg():
         'T': 256,  # 模拟总时间
         "Ts": 8,  # 每个stage的帧数
         "Nagent": 20,  # Agent数量
-        'D_env': False,  # 动态地形开关
+        'D_env': True,  # 动态地形开关
         'mul_agent': False,  # 多人互动开关
         'repeat': 5  # 重复几次同样参数的实验
     }
@@ -32,7 +32,8 @@ def init_env_arg(global_arg):
         'dynamic': global_arg['D_env'],  # 动态地形开关
         'sigma': 0.1,
         'mu': 0.5,
-        'value2ret': (lambda real_value: min(max((real_value - arg['mu']) / (2.58 * arg['sigma']), -1), 1))
+        'value2ret': (lambda real_value: min(max(0.5 + 0.5 * (real_value - arg['mu']) / (2.58 * arg['sigma']), 0), 1))
+        # min(max((real_value - arg['mu']) / (2.58 * arg['sigma']), -1), 1))
         # 99%截断，并将区间调整为[-1，1]
         # 'value2ret': (lambda real_value: (0.5 + 0.5 * tanh(10 * (real_value - 0.5)))**2)
     }
@@ -126,7 +127,8 @@ def init_agent_arg(global_arg, env_arg):
     arg = {}
     # 个体属性差异
     arg['a'] = {
-        "insight": clip_rsmp(0.001, 9.999, paretovariate, alpha=1)/10,  # 环境感知能力
+        "insight": clip_rsmp(0.001, 9.999, paretovariate, alpha=1) / 10,  # 环境感知能力
+        # clip_rsmp(0.55, 0.85, uniform, a=0.55, b=0.85), # expert模式
         "act": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.1),  # default Norm(0, 0.1),  # 行动意愿
         "xplr": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.3),  # default Norm(0, 0.2),  # 探索倾向
         "xplt": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.3),  # default Norm(0, 0.2),  # 利用倾向

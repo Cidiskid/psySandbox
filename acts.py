@@ -31,11 +31,11 @@ def act_zybkyb(env, agent, T, Tfi):
 
 # 自由执行，T代表该stage第一帧的时间戳，Tfi表示该帧的相对偏移（本stage的第几帧）
 def act_zyzx(env, socl_net, agent_no, agent, record, T, Tfi):
-    global_area = Area(agent.state_now, [True] * env.N, env.P // 2 * env.N)
+    global_area = Area(agent.state_now, [True] * env.N, env.P // 2 * env.N)  # 自由执行自带从global_area找下一个点
     state_next = global_area.rand_walk(agent.state_now)
     value_now = env.getValue(agent.state_now, T)
     value_next = env.arg['ACT']['zyzx']['ob'](env.getValue(state_next, T))  # 改为所有人是一样的ob影响参数
-    #agent.agent_arg['ob'](env.getValue(state_next, T))
+    # agent.agent_arg['ob'](env.getValue(state_next, T))
 
     dE = value_next - value_now
     kT0 = env.arg['ACT']['xdzx']['kT0']
@@ -45,7 +45,7 @@ def act_zyzx(env, socl_net, agent_no, agent, record, T, Tfi):
     # 随着时间推移，容忍度越来越低 按stage来衰减
     cd_T = T
     tol = kT0 * cd ** cd_T  # 容忍度
-    #logging.debug("tol:{}".format(tol))
+    # logging.debug("tol:{}".format(tol))
 
     if (dE >= 0 or (tol >= 1e-10 and exp(dE / tol) > uniform(0, 1))):
         agent.state_now = state_next
@@ -154,14 +154,15 @@ def act_hqxx(env, socl_net, agent_no, agent, record, T, Tfi):  # 获取信息
 def act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
     assert isinstance(env, Env) and isinstance(agent, Agent)
     assert isinstance(record, Record) and isinstance(socl_net, SoclNet)
-    new_plan_value = env.arg['ACT']['jhjc']["plan_eval"](new_plan.goal_value,
-                                                         new_plan.len_to_finish(agent.state_now))
+    new_plan_value = env.arg['ACT']['jhjc']["plan_eval"](new_plan.len_to_finish(agent.state_now),
+                                                         new_plan.goal_value)
     org_plan_value = env.getValue(agent.state_now)  # TODO cid 如果没有a_plan，至少以当前位置作为plan value
     if not agent.a_plan is None:
-        org_plan_value = env.arg['ACT']['jhjc']["plan_eval"](agent.a_plan.goal_value,
-                                                             agent.a_plan.len_to_finish(agent.state_now))
+        org_plan_value = env.arg['ACT']['jhjc']["plan_eval"](agent.a_plan.len_to_finish(agent.state_now),
+                                                             agent.a_plan.goal_value)
 
     agent.policy_now = 'jhjc_old'  # 添加当前行动记录，维持老计划
+    logging.debug("new_v: %.5s, org_v:%.5s" % (new_plan_value, org_plan_value))
     if new_plan_value >= org_plan_value:
         # P0-07 在覆盖新计划前对旧计划的执行情况进行判断并据此更新SoclNet.power
         if not agent.a_plan is None:

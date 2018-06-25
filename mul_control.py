@@ -43,7 +43,7 @@ class MulControl:
             self.agents[i].renew_m_info(start_area, 0)
             self.a_plan = None
             logging.info("state:%s, insight:%.5s ,xplr:%.5s, xplt:%.5s, enable:%.5s" % (
-                self.agents[i].state_now,
+                str(self.agents[i].state_now),
                 self.agents[i].agent_arg['a']['insight'],
                 self.agents[i].agent_arg['a']['xplr'],
                 self.agents[i].agent_arg['a']['xplt'],
@@ -175,28 +175,38 @@ class MulControl:
             # 运行Frame， 并将运行后生成的会议请求记录下来
             meet_req = self.run_all_frame(Ti, i, meet_req, up_info)
 
-            # 将信息添加到各个结果CSV中
-            # for k in range(self.global_arg["Nagent"]):
-            #    csv_info = [
-            #        Ti + i,
-            #        self.main_env.getValue(self.agents[k].state_now, Ti),
-            #        up_info['nkinfo']['max'],
-            #        up_info['nkinfo']['min'],
-            #        up_info['nkinfo']['avg']
-            #    ]
-            #    moniter.AppendToCsv(csv_info, all_config['result_csv_path'][k])
+            # 输出每个个体的具体信息
+            for k in range(self.global_arg["Nagent"]):
+                tmp_goal = ''
+                tmp_goal_value = ''
+                if not self.agents[k].a_plan is None:
+                    tmp_goal = self.agents[k].a_plan.goal
+                    tmp_goal_value = self.agents[k].a_plan.goal_value
 
+                csv_info_result = [
+                    Ti + i,
+                    str(self.agents[k].state_now),
+                    self.main_env.getValue(self.agents[k].state_now, Ti),
+                    self.agents[k].get_max_area().info['max'],
+                    str(self.agents[k].get_max_area().center),
+                    str(self.agents[k].policy_now) + '&' + str(self.agents[k].meeting_now),
+                    str(tmp_goal),
+                    tmp_goal_value
+                ]
+                moniter.AppendToCsv(csv_info_result, all_config['result_csv_path'][k])
+
+            # 输出当前value
             agent_value = [self.main_env.getValue(self.agents[k].state_now, Ti) for k in
                            range(self.global_arg["Nagent"])]
             agent_avg = sum(agent_value) / len(agent_value)
 
-            csv_info_result = [Ti + i] \
-                              + agent_value \
-                              + [agent_avg, max(agent_value), min(agent_value)] \
-                              + [up_info['nkinfo'][key] for key in ['max', 'min', 'avg']] \
-                              + [(agent_avg - up_info['nkinfo']['min']) / (
+            csv_info_value = [Ti + i] \
+                             + agent_value \
+                             + [agent_avg, max(agent_value), min(agent_value)] \
+                             + [up_info['nkinfo'][key] for key in ['max', 'min', 'avg']] \
+                             + [(agent_avg - up_info['nkinfo']['min']) / (
                     up_info['nkinfo']['max'] - up_info['nkinfo']['min'])]
-            moniter.AppendToCsv(csv_info_result, all_config['result_csv_path'][-1])
+            moniter.AppendToCsv(csv_info_value, all_config['value_csv_path'][-1])
 
             # 输出max_area
             agent_max_area = [self.agents[k].get_max_area().info['max'] for k in
@@ -208,7 +218,7 @@ class MulControl:
             moniter.AppendToCsv(csv_info_area, all_config['area_csv_path'])
 
             # NOTE cid 添加act信息(相应增加agent类里的变量）
-            act_list = [self.agents[k].policy_now + '/' + self.agents[k].meeting_now for k in
+            act_list = [self.agents[k].policy_now + '&' + self.agents[k].meeting_now for k in
                         range(self.global_arg["Nagent"])]
             csv_info_act = [Ti + i] \
                            + act_list
@@ -227,17 +237,17 @@ class MulControl:
         up_info = {}
 
         # 单个agent的结果表
-        # for k in range(self.global_arg["Nagent"]):
-        #    csv_head = ['frame', 'SSMfi', 'nkmax', 'nkmin', 'nkavg']
-        #    moniter.AppendToCsv(csv_head, all_config['result_csv_path'][k])
+        for k in range(self.global_arg["Nagent"]):
+            csv_head = ['frame', 'state', 'value', 'area_v', 'area_center', 'act', 'goal', 'goal_value']
+            moniter.AppendToCsv(csv_head, all_config['result_csv_path'][k])
         # 结果汇总表
         # 添加agent max和agent min
-        csv_head_result = ['frame'] \
-                          + ["agent%d" % (k) for k in range(self.global_arg['Nagent'])] \
-                          + ["agent_avg", "agent_max", "agent_min"] \
-                          + ['peakmax', 'peakmin', 'peakavg'] \
-                          + ['adj_avg']
-        moniter.AppendToCsv(csv_head_result, all_config['result_csv_path'][-1])
+        csv_head_value = ['frame'] \
+                         + ["agent%d" % (k) for k in range(self.global_arg['Nagent'])] \
+                         + ["agent_avg", "agent_max", "agent_min"] \
+                         + ['peakmax', 'peakmin', 'peakavg'] \
+                         + ['adj_avg']
+        moniter.AppendToCsv(csv_head_value, all_config['value_csv_path'][-1])
         csv_head_area = ['frame'] \
                         + ["agent%d" % (k) for k in range(self.global_arg['Nagent'])] \
                         + ["agent_avg"] \
@@ -304,14 +314,16 @@ if __name__ == '__main__':
         all_config['exp_id'] = exp_id
         try:
             os.mkdir(os.path.join("result", exp_id))
+            os.mkdir(os.path.join("result", exp_id, 'detail'))
         except:
             pass
-        # 关闭单个文档输出
-        # all_config['result_csv_path'] = [
-        #    os.path.join("result", exp_id, "res_%s_%02d.csv" % (exp_id, i)) for i in range(global_arg["Nagent"])
-        # ]
-        all_config['result_csv_path'] = []
-        all_config['result_csv_path'].append(
+        # 重启单个文档输出
+        all_config['result_csv_path'] = [
+            os.path.join("result", exp_id, "detail", "res_%s_%02d.csv" % (exp_id, i)) for i in
+            range(global_arg["Nagent"])
+        ]
+        all_config['value_csv_path'] = []
+        all_config['value_csv_path'].append(
             os.path.join("result", exp_id, "res_%s_value.csv" % (exp_id))
         )
 
