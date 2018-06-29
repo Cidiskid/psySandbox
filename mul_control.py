@@ -29,7 +29,7 @@ class MulControl:
         moniter.AppendToCsv(csv_head_agent, all_config['agent_csv_path'])
         for i in range(self.global_arg["Nagent"]):
             # 个体随机初始位置
-            start_st_label = [randint(0, self.main_env.P - 1) for i in range(self.main_env.N)]
+            start_st_label = [randint(0, self.main_env.P - 1) for j in range(self.main_env.N)]
             state_start = State(start_st_label)
             self.agents.append(Agent(arg.init_agent_arg(self.global_arg,
                                                         self.main_env.arg),
@@ -114,9 +114,11 @@ class MulControl:
 
         for m_name in meet_req:
             all_host = all_host.union(meet_req[m_name])
-            all_meet_info[m_name] = {"member": meet_req[m_name],
-                                     "host": meet_req[m_name]}
+            all_meet_info[m_name] = {"member": deepcopy(meet_req[m_name]),
+                                     "host": deepcopy(meet_req[m_name])}
         # 询问每个Agent是否加入
+        for m_name in all_meet_info:
+            logging.debug("before m_name:%s, member:%s, host:%s" % (m_name,all_meet_info[m_name]['member'],all_meet_info[m_name]['host']))
         for i in range(len(self.agents)):
             #            logging.debug("all_host:{}".format(all_host))
             # 跳过所有host
@@ -151,7 +153,7 @@ class MulControl:
                 new_meet_req[meet_info['name']].add(i)
         # 每个host都选完人之后，依次开会
         for m_name in all_meet_info:
-            logging.debug("m_name:%s, member:%s, host:%s" % (m_name,all_meet_info[m_name]['member'],all_meet_info[m_name]['host']))
+            logging.debug("after m_name:%s, member:%s, host:%s" % (m_name,all_meet_info[m_name]['member'],all_meet_info[m_name]['host']))
             self.run_meet_frame(Ti, Tfi, m_name,
                                 all_meet_info[m_name]['member'],
                                 all_meet_info[m_name]['host'],

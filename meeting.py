@@ -53,7 +53,7 @@ def meeting_xxjl(env, agents, member, host, socl_net, record, T, Tfi):  # 信息
         logging.debug("x:%s in memeber" % x)
         if not x in host: # 总是为false
             logging.debug("x:%s not in host" % x)
-            socl_net, agents[x] = acts.act_hqxx(env, socl_net, x, agents[x], T, Tfi)
+            socl_net, agents[x] = acts.act_hqxx(env, socl_net, x, agents[x], record, T, Tfi)
     for x in member:
         ret_info += agents[x].get_latest_m_info(env.arg['meeting']['xxjl']['last_p_t'],
                                                 env.arg['meeting']['xxjl']['max_num'])
