@@ -42,7 +42,7 @@ class SoclNet:
         # 无向Graph自动补全
         for i in self.relat.node():
             for j in range(i):
-                self.relat.add_weighted_edges_from([(i, j, 0.5 + unif(-0.01, 0.01))])
+                self.relat.add_weighted_edges_from([(i, j, 0.5 + unif(-0.01, 0.01))])   # 关系初始值和扰动大小
         for i in self.power.node():
             for j in self.power.node():
                 self.power.add_weighted_edges_from([(i, j, 0.5 + unif(-0.01, 0.01))])

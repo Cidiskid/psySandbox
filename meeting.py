@@ -44,11 +44,15 @@ def meeting_xxjl(env, agents, member, host, socl_net, record, T, Tfi):  # 信息
     assert isinstance(host, set) and isinstance(member, set)
     assert host.issubset(member)
     ret_info = []
+    logging.debug("memeber:%s,host:%s" % (member, host))
     for x in member:
+        logging.debug("agent%s meeting_now" % x)
         agents[x].meeting_now = 'xxjl'  # 添加当前行动记录
 
-    for x in member:
-        if not x in host:
+    for x in member:    # 没有进入循环
+        logging.debug("x:%s in memeber" % x)
+        if not x in host: # 总是为false
+            logging.debug("x:%s not in host" % x)
             socl_net, agents[x] = acts.act_hqxx(env, socl_net, x, agents[x], T, Tfi)
     for x in member:
         ret_info += agents[x].get_latest_m_info(env.arg['meeting']['xxjl']['last_p_t'],

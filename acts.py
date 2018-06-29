@@ -162,7 +162,7 @@ def act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
                                                              agent.a_plan.goal_value)
 
     agent.policy_now = 'jhjc_old'  # 添加当前行动记录，维持老计划
-    logging.debug("new_v: %.5s, org_v:%.5s" % (new_plan_value, org_plan_value))
+    #logging.debug("new_v: %.5s, org_v:%.5s" % (new_plan_value, org_plan_value))
     if new_plan_value >= org_plan_value:
         # P0-07 在覆盖新计划前对旧计划的执行情况进行判断并据此更新SoclNet.power
         if not agent.a_plan is None:
@@ -264,7 +264,7 @@ def act_dyjs(env, socl_net, agent_no, agent, record, T, Tfi):
     out_power = [socl_net.power[x][agent_no]['weight'] for x in range(global_arg["Nagent"])]
     to_power = random_choice(norm_softmax(out_power))
     for aim in range(global_arg['Nagent']):
-        delta = env.arg['ACT']['dyjs']['delta_relate'](socl_net.power[to_power][aim]['weight'])
+        delta = env.arg['ACT']['dyjs']['delta_power'](socl_net.power[to_power][aim]['weight'])
         socl_net.power_delta(to_power, aim, delta)
 
     agent.policy_now = 'dyjs'  # 添加当前行动记录

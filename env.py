@@ -293,13 +293,13 @@ class Env:
     def getModelDistri(self):
         all_value = self.getAllValue()
         # 为减少遍历数量，强行在这调用，仅测试时调用！！
-        # moniter.DrawHist(all_value, all_config['total_hist'])  # 需要输出hist时调用
+        #moniter.DrawHist(all_value, all_config['total_hist'])  # 需要输出hist时调用
         return Env._getDistri(all_value)
 
     def getModelPeakDistri(self):
         all_peak_value = self.getAllPeakValue()
         # 为减少遍历数量，强行在这调用，仅在测试时调用，并保证该函数只在mul_control中调用一次
-        # moniter.DrawHist(all_peak_value, all_config['peak_hist'])  # 需要输出hist时调用
+        #moniter.DrawHist(all_peak_value, all_config['peak_hist'])  # 需要输出hist时调用
         return Env._getDistri(all_peak_value)
 
     def nkmodel_save(self, filepath):

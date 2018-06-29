@@ -66,6 +66,7 @@ def DrawHist(nums, filename, label=None):
     total = len(x)
     n_bins = 20
     # n_bins = int(np.sqrt(len(x) * 2))
+    bin_width=(x.max()-x.min())/20
     mu = x.mean()
     sigma = x.std()
     # logging.info("len(x)= %d, n_bins= %d, mu= %0.3f, sigma= %0.3f" % (len(x), n_bins, mu, sigma))
@@ -76,15 +77,15 @@ def DrawHist(nums, filename, label=None):
                                 alpha=0.7)
 
     # Add a line showing the expected distribution.
-    # y = mlab.normpdf(bins, mu, sigma)
-    # plt.plot(bins, y, 'k--', linewidth=1.5)
+    y = mlab.normpdf(bins, mu, sigma)*bin_width*total
+    plt.plot(bins, y, 'k--', linewidth=1.5)
 
     # tidy up the figure
     # ax.grid(True)
     # ax.legend(loc='right')
-    plt.title(r'Peak Histogram: $\mu=%0.4f$, $\sigma=%0.4f$, total=%s' % (mu, sigma, total))
+    plt.title(r'Histogram: $\mu=%0.4f$, $\sigma=%0.4f$, total=%s' % (mu, sigma, total))
     plt.xlabel('Value')
-    plt.ylabel('Number')
+    #plt.ylabel('Number')
     plt.savefig(filename)
     plt.close()
     # plt.show()

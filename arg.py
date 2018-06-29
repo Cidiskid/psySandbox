@@ -13,10 +13,10 @@ def init_global_arg():
     arg = {
         'T': 256,  # 模拟总时间
         "Ts": 8,  # 每个stage的帧数
-        "Nagent": 20,  # Agent数量
+        "Nagent": 10,  # Agent数量
         'D_env': True,  # 动态地形开关
-        'mul_agent': False,  # 多人互动开关
-        'repeat': 5  # 重复几次同样参数的实验
+        'mul_agent': True,  # 多人互动开关
+        'repeat': 1  # 重复几次同样参数的实验
     }
     return arg
 
@@ -25,7 +25,7 @@ def init_env_arg(global_arg):
     # NK model
     arg = {
         'N': 5,
-        'K': 4,
+        'K': 1,
         'P': 7,  # 每个位点状态by Cid
         'T': global_arg['T'],  # 模拟总时间
         'Tp': global_arg['T'],  # 每个地形持续时间/地形变化耗时 by Cid
@@ -33,9 +33,8 @@ def init_env_arg(global_arg):
         'sigma': 0.1,
         'mu': 0.5,
         'value2ret': (lambda real_value: min(max(0.5 + 0.5 * (real_value - arg['mu']) / (2.58 * arg['sigma']), 0), 1))
-        # min(max((real_value - arg['mu']) / (2.58 * arg['sigma']), -1), 1))
-        # 99%截断，并将区间调整为[-1，1]
-        # 'value2ret': (lambda real_value: (0.5 + 0.5 * tanh(10 * (real_value - 0.5)))**2)
+        # 99%截断，并将区间调整为[0，1]
+        #'value2ret': (lambda real_value: real_value)  # 原始值
     }
 
     # 环境情景模型模块
@@ -92,10 +91,10 @@ def init_env_arg(global_arg):
         },
         "whlj": {
             "k": global_arg['Nagent'] // 2,
-            "delta_relate": lambda old: 0.1 * (1 - old)  # 0.1是改变速率，可以手动修改
+            "delta_relate": lambda old: 0.2 * (1 - old)  # 改变速率default 0.1，可以手动修改
         },
         "dyjs": {
-            "delta_relate": lambda old: 0.1 * (1 - old)  # 0.1是改变速率，可以手动修改
+            "delta_power": lambda old: 0.25 * (1 - old)  # 改变速率default 0.1，可以手动修改
         }
     }
 
@@ -118,7 +117,7 @@ def init_soclnet_arg(global_arg, env_arg):
     # networkx自带的Cc算法是归一化的,若令 dist=1.01-x上述距离定义的最短距为0.01，因此最短距不是(g-1)而是0.01*(g-1)
     arg['pow_w2d'] = (lambda x: 1 / (0.01 + x) + 0.01)
 
-    arg['re_decr_r'] = 0.98  # 自然衰减率
+    arg['re_decr_r'] = 0.95  # 自然衰减率
 
     return arg
 
@@ -127,8 +126,8 @@ def init_agent_arg(global_arg, env_arg):
     arg = {}
     # 个体属性差异
     arg['a'] = {
-        "insight": clip_rsmp(0.001, 9.999, paretovariate, alpha=1) / 10,  # 环境感知能力
-        # clip_rsmp(0.55, 0.85, uniform, a=0.55, b=0.85), # expert模式
+        "insight": clip_rsmp(0.001, 9.999, paretovariate, alpha=1) / 10,  # 环境感知能力 base 模式
+        #"insight": clip_rsmp(0.55, 0.85, uniform, a=0.55, b=0.85), # expert模式
         "act": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.1),  # default Norm(0, 0.1),  # 行动意愿
         "xplr": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.3),  # default Norm(0, 0.2),  # 探索倾向
         "xplt": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.3),  # default Norm(0, 0.2),  # 利用倾向
@@ -141,15 +140,15 @@ def init_agent_arg(global_arg, env_arg):
     arg["ob"] = (lambda x: Norm(x, ob_a * (1 - arg['a']['insight'])))  # 更换为1-a_insight
     # arg["ob"] = (lambda x: x)  # 测试公式
 
-    incr_rate = 0.03  # 关系增加速率
+    incr_rate = 0.2  # 关系增加速率
     arg["re_incr_g"] = (
-        lambda old_re: (1 - 2 * incr_rate) * old_re + 2 * incr_rate)  # 表示general的increase，在参加完任意一次集体活动后被调用
+        lambda old_re: (1 - incr_rate) * old_re + incr_rate)  # 表示general的increase，在参加完任意一次集体活动后被调用
 
     arg['dP_r'] = {
         "other": 0.2,  # 对他人给的计划变化幅度更大
-        "self": 0.1  # 对自己的计划变化幅度较小（效能提升小）
+        "self": 0.05  # 对自己的计划变化幅度较小（效能提升小）
     }
-    dP_s = 100  # 对变化的敏感度
+    dP_s = 10  # 对变化的敏感度
     arg["dPower"] = (lambda dF, dP_r: dP_r * tanh(dP_s * dF))
 
     arg["pwr_updt_g"] = (lambda old_pwr, dP: (1 - abs(dP)) * old_pwr + 0.5 * (dP + abs(dP)))

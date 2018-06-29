@@ -149,11 +149,12 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
         last_agent = deepcopy(agent)
         agent.meeting_now = ''  # 不参加会议
         (soc_net, agent) = acts.act_jhnd(env, soc_net, agent_no, agent, record, Ti, Tfi)
-        if (last_agent.a_plan is None or last_agent.a_plan.goal_value < agent.a_plan.goal_value):
-            p_req = agent.frame_arg["ACT"]['p-req']['xtfg'](self_efficacy, host_Cc, host_Cod)
-            if p_req > uniform(0, 1):
-                agent.meeting_now = 'xtfg_req'  # 发起信息交流会议
-                meet_info = {"type": "req", "name": "xtfg"}
+        if not agent.a_plan is None:  # 保证有计划
+            if (last_agent.a_plan is None or last_agent.a_plan.goal_value < agent.a_plan.goal_value):  # 如果获取了新计划会提议行动
+                p_req = agent.frame_arg["ACT"]['p-req']['xtfg'](self_efficacy, host_Cc, host_Cod)
+                if p_req > uniform(0, 1):
+                    agent.meeting_now = 'xtfg_req'  # 发起信息交流会议
+                    meet_info = {"type": "req", "name": "xtfg"}
         return agent, soc_net, meet_info
     elif use_police == "xdzx_xtfg":
         if 'xtfg' in meet_req:

@@ -68,6 +68,7 @@ class MulControl:
 
     def run_meet_frame(self, Ti, Tfi, meet_name, member, host, up_info):
         # 根据m_name开会
+        logging.debug("m_name:%s, member:%s, host:%s" % (meet_name,member,host))
         self.agents, self.socl_net = meeting.meet_map[meet_name](env=self.main_env,
                                                                  agents=self.agents,
                                                                  member=member,
@@ -150,6 +151,7 @@ class MulControl:
                 new_meet_req[meet_info['name']].add(i)
         # 每个host都选完人之后，依次开会
         for m_name in all_meet_info:
+            logging.debug("m_name:%s, member:%s, host:%s" % (m_name,all_meet_info[m_name]['member'],all_meet_info[m_name]['host']))
             self.run_meet_frame(Ti, Tfi, m_name,
                                 all_meet_info[m_name]['member'],
                                 all_meet_info[m_name]['host'],
@@ -260,7 +262,7 @@ class MulControl:
 
         stage_num = self.global_arg['T'] // self.global_arg['Ts']
 
-        # self.main_env.getModelDistri() # 为了作图，仅测试时调用！！
+        #self.main_env.getModelDistri() # 为了作图，仅测试时调用！！
         up_info['nkinfo'] = self.main_env.getModelPeakDistri()  # 将nkinfo变为peakvalue
         # all_peak_value = self.main_env.getAllPeakValue()
         # moniter.DrawHist(all_peak_value, all_config['peak_hist'])
@@ -332,7 +334,7 @@ if __name__ == '__main__':
         # NOTE cid 添加一个act的记录文件
         all_config['act_csv_path'] = os.path.join("result", exp_id, "res_%s_act.csv" % (exp_id))
         if global_arg['mul_agent']:
-            all_config['network_csv_path'] = os.path.join("result", exp_id, "network.csv")
+            all_config['network_csv_path'] = os.path.join("result", exp_id, "network")
             try:
                 os.mkdir(all_config['network_csv_path'])
             except:
