@@ -10,7 +10,7 @@ import meeting
 from util.config import all_config
 from util import moniter
 from record import Record
-import numpy as np
+from random import randint
 
 
 class MulControl:
@@ -29,8 +29,8 @@ class MulControl:
         moniter.AppendToCsv(csv_head_agent, all_config['agent_csv_path'])
         for i in range(self.global_arg["Nagent"]):
             # 个体随机初始位置
-            start_st_label = np.random.random_integers(0, self.main_env.P - 1, self.main_env.N)
-            state_start = State(start_st_label.tolist())
+            start_st_label = [randint(0, self.main_env.P - 1) for i in range(self.main_env.N)]
+            state_start = State(start_st_label)
             self.agents.append(Agent(arg.init_agent_arg(self.global_arg,
                                                         self.main_env.arg),
                                      self.main_env))
