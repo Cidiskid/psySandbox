@@ -96,6 +96,7 @@ class SoclNet:
 
     def get_power_out_degree_centrality(self):
         power_bi = nx.DiGraph()
+        power_bi.add_nodes_from(range(self.arg['Nagent']))
         for u, v, data in self.power.edges(data=True):
             # 排除自身loop
             if u == v:
