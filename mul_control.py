@@ -117,6 +117,7 @@ class MulControl:
             all_meet_info[m_name] = {"member": deepcopy(meet_req[m_name]),
                                      "host": deepcopy(meet_req[m_name])}
         # 询问每个Agent是否加入
+        logging.debug("all host:%s"%(all_host))
         for m_name in all_meet_info:
             logging.debug("before m_name:%s, member:%s, host:%s" % (m_name,all_meet_info[m_name]['member'],all_meet_info[m_name]['host']))
         for i in range(len(self.agents)):
@@ -160,7 +161,7 @@ class MulControl:
                                 up_info)
         return new_meet_req
 
-    def run_stage(self, Ti, up_info):
+    def run_stage(self, Ti, meet_req, up_info):
         # 将Agent上一个stage的最终状态拷贝过来
         for i in range(len(self.agents)):
             last_arg = deepcopy(self.agents[i].stage_arg)
@@ -236,6 +237,7 @@ class MulControl:
             self.socl_net.power_save(power_save_path)
             self.socl_net.relat_save(relat_save_path)
             #  P1-05 增加Socil Network的结果输出
+        return  meet_req
 
     def run_exp(self):
         up_info = {}
@@ -269,6 +271,7 @@ class MulControl:
         # all_peak_value = self.main_env.getAllPeakValue()
         # moniter.DrawHist(all_peak_value, all_config['peak_hist'])
 
+        meet_req = {}
         for i in range(stage_num):
             Ti = i * self.global_arg['Ts'] + 1
             logging.info("stage %3d, Ti:%3d" % (i, Ti))
@@ -278,7 +281,7 @@ class MulControl:
             # up_info['nkinfo'] = self.main_env.getModelDistri()
             # logging.debug("max_value:{max}".format(**up_info['nkinfo']))
             # 运行一个Stage，Ti表示每个Stage的第一帧
-            self.run_stage(Ti, up_info)
+            meet_req = self.run_stage(Ti, meet_req, up_info)
 
 
 if __name__ == '__main__':
