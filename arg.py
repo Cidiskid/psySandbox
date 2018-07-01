@@ -112,6 +112,8 @@ def init_env_arg(global_arg):
 def init_soclnet_arg(global_arg, env_arg):
     arg = {}
     arg['Nagent'] = global_arg['Nagent']
+    arg['power_thld'] = 0.75
+    arg['relat_thld'] = 0.75
 
     # 权重到距离的转化公式
     # networkx自带的Cc算法是归一化的,若令 dist=1.01-x上述距离定义的最短距为0.01，因此最短距不是(g-1)而是0.01*(g-1)

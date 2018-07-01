@@ -26,6 +26,8 @@ class SoclNet:
         self.power = nx.DiGraph()
         self.relat.add_nodes_from(range(arg['Nagent']))
         self.power.add_nodes_from(range(arg['Nagent']))
+        self.power_thld = arg['power_thld']
+        self.relat_thld = arg['relat_thld']
 
     def random_init_relation(self):
         pass
@@ -93,10 +95,20 @@ class SoclNet:
         return nx.closeness_centrality(G=self.relat, distance='dist')
 
     def get_power_out_degree_centrality(self):
-        return nx.out_degree_centrality(nx.to_directed(self.power))
+        power_bi = nx.DiGraph()
+        for u, v, data in self.power.edges(data=True):
+            # 排除自身loop
+            if u == v:
+                continue
+            if 'weight' in data:
+                if data['weight'] >= self.power_thld:
+                    power_bi.add_edge(u, v, weight=1)
 
-    def get_relat_out_degree_centrality(self):
-        return nx.out_degree_centrality(nx.to_directed(self.relat))
+        return nx.out_degree_centrality(nx.to_directed(power_bi))
+
+    # relat 无向图，不存在od cent的
+    #def get_relat_out_degree_centrality(self):
+    #    return nx.out_degree_centrality(nx.to_directed(self.relat))
 
     @staticmethod
     def network_save(ntwk, filepath):

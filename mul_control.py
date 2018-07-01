@@ -18,7 +18,7 @@ class MulControl:
         # 环境初始化
         self.global_arg = arg.init_global_arg()
         env_arg = arg.init_env_arg(self.global_arg)
-        # TODO @wzk 需要增加nk的一个读入操作
+        # 增加nk的一个读入操作
         self.main_env = Env(env_arg)
         if all_config['checkpoint']['env']['enable']:
             self.main_env.nkmodel_load(all_config['checkpoint']['env']['path'])
