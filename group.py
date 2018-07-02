@@ -47,7 +47,7 @@ class SoclNet:
         for i in self.power.node():
             for j in self.power.node():
                 if i==j:
-                    self.power.add_weighted_edges_from([(i, j, 0.5 + unif(-0.3, 0.3))])
+                    self.power.add_weighted_edges_from([(i, j, 0.5 + unif(-0.2, 0.2))])
                 else:
                     self.power.add_weighted_edges_from([(i, j, self.arg['power_init'] + unif(-0.01, 0.01))])
 

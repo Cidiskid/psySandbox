@@ -5,7 +5,7 @@ from random import uniform, paretovariate
 from math import exp, pow, tanh, cos, pi
 from copy import deepcopy
 import logging
-from util.util import max_choice, random_choice, softmaxM1, clip, clip_rsmp, clip_tanh
+from util.util import max_choice, random_choice, softmaxM1, clip, clip_rsmp, clip_tanh, rand_shrink
 from env import Area
 
 
@@ -16,7 +16,7 @@ def init_global_arg():
         "Nagent": 10,  # Agent数量
         'D_env': True,  # 动态地形开关
         'mul_agent': True,  # 多人互动开关
-        'repeat': 3  # 重复几次同样参数的实验
+        'repeat': 1  # 重复几次同样参数的实验
     }
     return arg
 
@@ -34,7 +34,7 @@ def init_env_arg(global_arg):
         'mu': 0.5,
         'value2ret': (lambda real_value: min(max(0.5 + 0.5 * (real_value - arg['mu']) / (2.58 * arg['sigma']), 0), 1))
         # 99%截断，并将区间调整为[0，1]
-        #'value2ret': (lambda real_value: real_value)  # 原始值
+        # 'value2ret': (lambda real_value: real_value)  # 原始值
     }
 
     # 环境情景模型模块
@@ -91,10 +91,10 @@ def init_env_arg(global_arg):
         },
         "whlj": {
             "k": global_arg['Nagent'] // 2,
-            "delta_relate": lambda old: 0.2 * (1 - old)  # 改变速率default 0.1，可以手动修改
+            "delta_relate": lambda old: 0.4 * (1 - old)  # 改变速率default 0.1，可以手动修改
         },
         "dyjs": {
-            "delta_power": lambda old: 0.25 * (1 - old)  # 改变速率default 0.1，可以手动修改
+            "delta_power": lambda old: 0.05 * (1 - old)  # 改变速率default 0.1，可以手动修改
         }
     }
 
@@ -115,13 +115,13 @@ def init_soclnet_arg(global_arg, env_arg):
     arg['power_thld'] = 0.75
     arg['relat_thld'] = 0.75
     arg['relat_init'] = 0.5
-    arg['power_init'] = 0.5
+    arg['power_init'] = 0.25
 
     # 权重到距离的转化公式
     # networkx自带的Cc算法是归一化的,若令 dist=1.01-x上述距离定义的最短距为0.01，因此最短距不是(g-1)而是0.01*(g-1)
     arg['pow_w2d'] = (lambda x: 1 / (0.01 + x) + 0.01)
 
-    arg['re_decr_r'] = 0.95  # 自然衰减率
+    arg['re_decr_r'] = 0.9  # 自然衰减率
 
     return arg
 
@@ -131,7 +131,7 @@ def init_agent_arg(global_arg, env_arg):
     # 个体属性差异
     arg['a'] = {
         "insight": clip_rsmp(0.001, 9.999, paretovariate, alpha=1) / 10,  # 环境感知能力 base 模式
-        #"insight": clip_rsmp(0.55, 0.85, uniform, a=0.55, b=0.85), # expert模式
+        # "insight": clip_rsmp(0.55, 0.85, uniform, a=0.55, b=0.85), # expert模式
         "act": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.1),  # default Norm(0, 0.1),  # 行动意愿
         "xplr": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.3),  # default Norm(0, 0.2),  # 探索倾向
         "xplt": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.3),  # default Norm(0, 0.2),  # 利用倾向
@@ -144,16 +144,16 @@ def init_agent_arg(global_arg, env_arg):
     arg["ob"] = (lambda x: Norm(x, ob_a * (1 - arg['a']['insight'])))  # 更换为1-a_insight
     # arg["ob"] = (lambda x: x)  # 测试公式
 
-    incr_rate = 0.2  # 关系增加速率
+    incr_rate = 0.4  # 关系增加速率
     arg["re_incr_g"] = (
         lambda old_re: (1 - incr_rate) * old_re + incr_rate)  # 表示general的increase，在参加完任意一次集体活动后被调用
 
     arg['dP_r'] = {
-        "other": 0.2,  # 对他人给的计划变化幅度更大
+        "other": 0.5,  # 对他人给的计划变化幅度更大
         "self": 0.05  # 对自己的计划变化幅度较小（效能提升小）
     }
     dP_s = 10  # 对变化的敏感度
-    arg["dPower"] = (lambda dF, dP_r: dP_r * tanh(dP_s * dF))
+    arg["dPower"] = (lambda dF, dP_r: dP_r * rand_shrink(tanh(dP_s * dF), 0.1))
 
     arg["pwr_updt_g"] = (lambda old_pwr, dP: (1 - abs(dP)) * old_pwr + 0.5 * (dP + abs(dP)))
     arg["d_pwr_updt_g"] = (lambda old_pwr, dP: arg["pwr_updt_g"](old_pwr, dP) - old_pwr)
@@ -251,14 +251,14 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
         "p-cmt": {},
         "p-req": {}
     }
-    k_cmt = 0.2
+    k_cmt = 0.5
     arg['ACT']['p-cmt']['xxjl'] = lambda max_relat, max_power, self_efficacy: \
         (1 - k_cmt) * max_relat ** 2 + k_cmt
     arg['ACT']['p-cmt']['tljc'] = lambda max_relat, max_power, self_efficacy: \
         (1 - max(0, max_power - self_efficacy)) * max_relat ** 2 + max(0, max_power - self_efficacy)
     arg['ACT']['p-cmt']['xtfg'] = lambda max_relat, max_power, self_efficacy: \
         (1 - max(0, max_power - self_efficacy)) * max_relat ** 2 + max(0, max_power - self_efficacy)
-    k_req = 0.2
+    k_req = 0.1
     arg['ACT']['p-req']['xxjl'] = lambda self_efficacy, host_Cc, host_Cod: \
         (1 - k_req) * host_Cc ** 2 + k_req
     arg['ACT']['p-req']['tljc'] = lambda self_efficacy, host_Cc, host_Cod: \

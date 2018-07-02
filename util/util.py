@@ -88,3 +88,14 @@ def listnorm(items):
 
 def norm_softmax(items):
     return softmax(listnorm(items))
+
+
+def rand_shrink(num, ratio):
+    assert num >= -1
+    assert num <= 1
+    assert ratio < 0.8
+    ret = num
+    if num > 0:
+        ret = num * abs(clip_rsmp(-0.999, 0.999, Norm, mu=ratio, sigma=0.1))
+
+    return ret

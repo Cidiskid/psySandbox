@@ -299,6 +299,7 @@ if __name__ == '__main__':
     env_arg = arg.init_env_arg(global_arg)
     # 总目录
     batch_id = '_'.join([
+        'batch',
         time.strftime("%Y%m%d-%H%M%S"),
         "N" + str(env_arg['N']),
         "K" + str(env_arg['K']),
