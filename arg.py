@@ -16,7 +16,7 @@ def init_global_arg():
         "Nagent": 10,  # Agent数量
         'D_env': True,  # 动态地形开关
         'mul_agent': True,  # 多人互动开关
-        'repeat': 1  # 重复几次同样参数的实验
+        'repeat': 3  # 重复几次同样参数的实验
     }
     return arg
 
@@ -114,6 +114,8 @@ def init_soclnet_arg(global_arg, env_arg):
     arg['Nagent'] = global_arg['Nagent']
     arg['power_thld'] = 0.75
     arg['relat_thld'] = 0.75
+    arg['relat_init'] = 0.5
+    arg['power_init'] = 0.5
 
     # 权重到距离的转化公式
     # networkx自带的Cc算法是归一化的,若令 dist=1.01-x上述距离定义的最短距为0.01，因此最短距不是(g-1)而是0.01*(g-1)

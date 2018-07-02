@@ -61,6 +61,7 @@ class MulControl:
         soclnet_arg = arg.init_soclnet_arg(self.global_arg, env_arg)
         self.socl_net = SoclNet(soclnet_arg)
         self.socl_net.flat_init()
+        # self.socl_net.flat_init()
         if all_config['checkpoint']['socl_network']['enable']:
             self.socl_net.power_load(all_config['checkpoint']['socl_network']['power'])
             self.socl_net.relat_load(all_config['checkpoint']['socl_network']['relat'])
@@ -68,7 +69,7 @@ class MulControl:
 
     def run_meet_frame(self, Ti, Tfi, meet_name, member, host, up_info):
         # 根据m_name开会
-        logging.debug("m_name:%s, member:%s, host:%s" % (meet_name,member,host))
+        logging.debug("m_name:%s, member:%s, host:%s" % (meet_name, member, host))
         self.agents, self.socl_net = meeting.meet_map[meet_name](env=self.main_env,
                                                                  agents=self.agents,
                                                                  member=member,
@@ -117,9 +118,10 @@ class MulControl:
             all_meet_info[m_name] = {"member": deepcopy(meet_req[m_name]),
                                      "host": deepcopy(meet_req[m_name])}
         # 询问每个Agent是否加入
-        logging.debug("all host:%s"%(all_host))
+        logging.debug("all host:%s" % (all_host))
         for m_name in all_meet_info:
-            logging.debug("before m_name:%s, member:%s, host:%s" % (m_name,all_meet_info[m_name]['member'],all_meet_info[m_name]['host']))
+            logging.debug("before m_name:%s, member:%s, host:%s" % (
+                m_name, all_meet_info[m_name]['member'], all_meet_info[m_name]['host']))
         for i in range(len(self.agents)):
             #            logging.debug("all_host:{}".format(all_host))
             # 跳过所有host
@@ -154,7 +156,8 @@ class MulControl:
                 new_meet_req[meet_info['name']].add(i)
         # 每个host都选完人之后，依次开会
         for m_name in all_meet_info:
-            logging.debug("after m_name:%s, member:%s, host:%s" % (m_name,all_meet_info[m_name]['member'],all_meet_info[m_name]['host']))
+            logging.debug("after m_name:%s, member:%s, host:%s" % (
+                m_name, all_meet_info[m_name]['member'], all_meet_info[m_name]['host']))
             self.run_meet_frame(Ti, Tfi, m_name,
                                 all_meet_info[m_name]['member'],
                                 all_meet_info[m_name]['host'],
@@ -237,7 +240,7 @@ class MulControl:
             self.socl_net.power_save(power_save_path)
             self.socl_net.relat_save(relat_save_path)
             #  P1-05 增加Socil Network的结果输出
-        return  meet_req
+        return meet_req
 
     def run_exp(self):
         up_info = {}
@@ -266,7 +269,7 @@ class MulControl:
 
         stage_num = self.global_arg['T'] // self.global_arg['Ts']
 
-        #self.main_env.getModelDistri() # 为了作图，仅测试时调用！！
+        # self.main_env.getModelDistri() # 为了作图，仅测试时调用！！
         up_info['nkinfo'] = self.main_env.getModelPeakDistri()  # 将nkinfo变为peakvalue
         # all_peak_value = self.main_env.getAllPeakValue()
         # moniter.DrawHist(all_peak_value, all_config['peak_hist'])
@@ -294,61 +297,78 @@ if __name__ == '__main__':
     logging.info("Start")
     global_arg = arg.init_global_arg()
     env_arg = arg.init_env_arg(global_arg)
-    # 修改了single情况下的文件名
+    # 总目录
+    batch_id = '_'.join([
+        time.strftime("%Y%m%d-%H%M%S"),
+        "N" + str(env_arg['N']),
+        "K" + str(env_arg['K']),
+        "P" + str(env_arg['P']),
+        "T" + str(global_arg['T']),
+        "Ts" + str(global_arg['Ts'])
+    ])
+    all_config['batch_id'] = batch_id
+    all_config['exp_list_path'] = os.path.join("result", all_config['batch_id'], 'exp_list.csv')
+    exp_list = []
+    try:
+        os.mkdir(os.path.join("result", all_config['batch_id']))
+    except:
+        pass
+
+    # 运行实验主体
     for exp_num in range(global_arg['repeat']):
         if global_arg['mul_agent']:
             exp_id = "_".join([
                 "mul",
                 time.strftime("%Y%m%d-%H%M%S"),
-                "exp" + str(exp_num),
-                "N" + str(env_arg['N']),
-                "K" + str(env_arg['K']),
-                "P" + str(env_arg['P']),
-                "T" + str(global_arg['T']),
-                "Ts" + str(global_arg['Ts'])
+                "exp" + str(exp_num)
             ])
         else:
             exp_id = "_".join([
                 "sgl",
                 time.strftime("%Y%m%d-%H%M%S"),
-                "exp" + str(exp_num),
-                "N" + str(env_arg['N']),
-                "K" + str(env_arg['K']),
-                "P" + str(env_arg['P']),
-                "T" + str(global_arg['T']),
-                "Ts" + str(global_arg['Ts'])
+                "exp" + str(exp_num)
             ])
         all_config['exp_id'] = exp_id
+        exp_list.append(exp_id)
+
         try:
-            os.mkdir(os.path.join("result", exp_id))
-            os.mkdir(os.path.join("result", exp_id, 'detail'))
+            os.mkdir(os.path.join("result", all_config['batch_id'], exp_id))
+            os.mkdir(os.path.join("result", all_config['batch_id'], exp_id, 'detail'))
         except:
             pass
-        # 重启单个文档输出
+        # 单个结果文档输出,位于detail目录下
         all_config['result_csv_path'] = [
-            os.path.join("result", exp_id, "detail", "res_%s_%02d.csv" % (exp_id, i)) for i in
+            os.path.join("result", all_config['batch_id'], exp_id, "detail", "%s_%02d.csv" % (exp_id, i)) for i in
             range(global_arg["Nagent"])
         ]
-        all_config['value_csv_path'] = []
-        all_config['value_csv_path'].append(
-            os.path.join("result", exp_id, "res_%s_value.csv" % (exp_id))
-        )
-
-        # max_area输出
-        all_config['area_csv_path'] = os.path.join("result", exp_id, "res_%s_area.csv" % (exp_id))
-        # NOTE cid 添加一个act的记录文件
-        all_config['act_csv_path'] = os.path.join("result", exp_id, "res_%s_act.csv" % (exp_id))
+        # network输出，位于network下
         if global_arg['mul_agent']:
-            all_config['network_csv_path'] = os.path.join("result", exp_id, "network")
+            all_config['network_csv_path'] = os.path.join("result", all_config['batch_id'], exp_id, "network")
             try:
                 os.mkdir(all_config['network_csv_path'])
             except:
                 pass
-        all_config['nkmodel_path'] = os.path.join("result", exp_id, "nkmodel.pickle")
-        all_config['agent_csv_path'] = os.path.join("result", exp_id, "agent_attribute.csv")
-        all_config['peak_hist'] = os.path.join("result", exp_id, "peak_hist.png")
-        all_config['total_hist'] = os.path.join("result", exp_id, "total_hist.png")
+        # 其他汇总信息，位于每个exp的总目录下
+        all_config['value_csv_path'] = []
+        all_config['value_csv_path'].append(
+            os.path.join("result", all_config['batch_id'], exp_id, "%s_value.csv" % (exp_id))
+        )
+
+        # max_area输出
+        all_config['area_csv_path'] = os.path.join("result", all_config['batch_id'], exp_id, "%s_area.csv" % (exp_id))
+        # 添加一个act的记录文件
+        all_config['act_csv_path'] = os.path.join("result", all_config['batch_id'], exp_id, "%s_act.csv" % (exp_id))
+
+        all_config['nkmodel_path'] = os.path.join("result", all_config['batch_id'], exp_id,
+                                                  "%s_nkmodel.pickle" % (exp_id))
+        all_config['agent_csv_path'] = os.path.join("result", all_config['batch_id'], exp_id,
+                                                    "%s_agent_attribute.csv" % (exp_id))
+        all_config['peak_hist'] = os.path.join("result", all_config['batch_id'], exp_id, "%s_peak_hist.png" % (exp_id))
+        all_config['total_hist'] = os.path.join("result", all_config['batch_id'], exp_id,
+                                                "%s_total_hist.png" % (exp_id))
 
         logging.info("run exp %3d" % exp_num)
         main_control = MulControl()
         main_control.run_exp()  # 开始运行实验
+
+    moniter.AppendToCsv(exp_list, all_config['exp_list_path'])
