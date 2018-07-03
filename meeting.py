@@ -30,7 +30,8 @@ def meeting_xtfg(env, agents, member, host, socl_net, record, T, Tfi):  # 协调
 
     for x in member:
         to_commit = plan_pool[random_choice(sample_pool)]['plan']
-        socl_net,agents[x] = acts.act_commit(env, socl_net, x, agents[x],record, T, Tfi, to_commit)
+        socl_net, agents[x] = acts.act_commit(env, socl_net, x, agents[x], record, T, Tfi, to_commit,member)  # 传入member，以便加入plan.info，后续执行时增强关系
+        # socl_net,agents[x] = acts.act_commit(env, socl_net, x, agents[x],record, T, Tfi, to_commit)
 
     for u in member:
         for v in range(u):

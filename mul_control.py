@@ -60,7 +60,7 @@ class MulControl:
         # 社会网络初始化
         soclnet_arg = arg.init_soclnet_arg(self.global_arg, env_arg)
         self.socl_net = SoclNet(soclnet_arg)
-        self.socl_net.flat_init()
+        self.socl_net.new_flat_init() # 修改初始化方法
         # self.socl_net.flat_init()
         if all_config['checkpoint']['socl_network']['enable']:
             self.socl_net.power_load(all_config['checkpoint']['socl_network']['power'])

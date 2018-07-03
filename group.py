@@ -43,13 +43,15 @@ class SoclNet:
         # 无向Graph自动补全
         for i in self.relat.node():
             for j in range(i):
-                self.relat.add_weighted_edges_from([(i, j, self.arg['relat_init'] + unif(-0.15, 0.15))])   # 关系初始值和扰动大小
+                #self.relat.add_weighted_edges_from([(i, j, self.arg['relat_init'])])  #测试稳态用公式
+                self.relat.add_weighted_edges_from([(i, j, self.arg['relat_init'] + unif(-0.2, 0.2))])   # 关系初始值和扰动大小
         for i in self.power.node():
             for j in self.power.node():
                 if i==j:
-                    self.power.add_weighted_edges_from([(i, j, 0.5 + unif(-0.2, 0.2))])
+                    self.power.add_weighted_edges_from([(i, j, 0.5 + unif(-0.1, 0.1))])
                 else:
-                    self.power.add_weighted_edges_from([(i, j, self.arg['power_init'] + unif(-0.01, 0.01))])
+                    self.power.add_weighted_edges_from([(i, j, self.arg['power_init'])])  #测试稳态用公式
+                    #self.power.add_weighted_edges_from([(i, j, self.arg['power_init'] + unif(-0.01, 0.01))])
 
     # 初始关系数值为0.5加随机扰动
     def flat_init(self):

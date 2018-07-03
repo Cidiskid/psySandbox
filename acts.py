@@ -108,6 +108,13 @@ def act_xdzx(env, socl_net, agent_no, agent, record, T, Tfi):
         return act_zyzx(env, socl_net, agent_no, agent, record, T, Tfi)
     assert isinstance(agent.a_plan, Plan)
     if 'commit' in agent.a_plan.info and agent.a_plan.info['commit']:
+        # 如果是xtfg分配来的计划，执行时同时触发关系维护机制
+        member = agent.a_plan.info['member']
+        for u in member:
+            if u != agent_no:
+                delta_re = agent.agent_arg['d_re_incr_g'](socl_net.relat[u][agent_no]['weight'])
+                socl_net.relat_delta(u, agent_no, delta_re)
+
         return act_jhzx(env, socl_net, agent_no, agent, record, T, Tfi)
     state_val = env.getValue(agent.state_now)
     plan_dist = agent.a_plan.len_to_finish(agent.state_now)
@@ -162,7 +169,7 @@ def act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
                                                              agent.a_plan.goal_value)
 
     agent.policy_now = 'jhjc_old'  # 添加当前行动记录，维持老计划
-    #logging.debug("new_v: %.5s, org_v:%.5s" % (new_plan_value, org_plan_value))
+    # logging.debug("new_v: %.5s, org_v:%.5s" % (new_plan_value, org_plan_value))
     if new_plan_value >= org_plan_value:
         # P0-07 在覆盖新计划前对旧计划的执行情况进行判断并据此更新SoclNet.power
         if not agent.a_plan is None:
@@ -186,7 +193,7 @@ def act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
     return socl_net, agent
 
 
-def act_commit(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
+def act_commit(env, socl_net, agent_no, agent, record, T, Tfi, new_plan, member):
     assert isinstance(env, Env) and isinstance(agent, Agent)
     assert isinstance(socl_net, SoclNet)
     assert isinstance(new_plan, Plan) and isinstance(record, Record)
@@ -210,6 +217,7 @@ def act_commit(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
         agent.a_plan = deepcopy(new_plan)
         agent.a_plan.info['T_acpt'] = T + Tfi
         agent.a_plan.info['commit'] = True
+        agent.a_plan.info['member'] = member
         agent.policy_now = 'commit_t'  # 添加当前行动记录
 
     logging.debug(agent.policy_now)

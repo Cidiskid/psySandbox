@@ -91,10 +91,10 @@ def init_env_arg(global_arg):
         },
         "whlj": {
             "k": global_arg['Nagent'] // 2,
-            "delta_relate": lambda old: 0.4 * (1 - old)  # 改变速率default 0.1，可以手动修改
+            "delta_relate": lambda old: 0.01 * (1 - old)  # 改变速率default 0.1，可以手动修改
         },
         "dyjs": {
-            "delta_power": lambda old: 0.05 * (1 - old)  # 改变速率default 0.1，可以手动修改
+            "delta_power": lambda old: 0.01 * (1 - old)  # 改变速率default 0.1，可以手动修改
         }
     }
 
@@ -112,16 +112,16 @@ def init_env_arg(global_arg):
 def init_soclnet_arg(global_arg, env_arg):
     arg = {}
     arg['Nagent'] = global_arg['Nagent']
-    arg['power_thld'] = 0.75
-    arg['relat_thld'] = 0.75
+    arg['power_thld'] = 0.7
+    arg['relat_thld'] = 0.7
     arg['relat_init'] = 0.5
-    arg['power_init'] = 0.25
+    arg['power_init'] = 0.5
 
     # 权重到距离的转化公式
     # networkx自带的Cc算法是归一化的,若令 dist=1.01-x上述距离定义的最短距为0.01，因此最短距不是(g-1)而是0.01*(g-1)
     arg['pow_w2d'] = (lambda x: 1 / (0.01 + x) + 0.01)
 
-    arg['re_decr_r'] = 0.9  # 自然衰减率
+    arg['re_decr_r'] = 0.95  # 自然衰减率
 
     return arg
 
@@ -144,16 +144,18 @@ def init_agent_arg(global_arg, env_arg):
     arg["ob"] = (lambda x: Norm(x, ob_a * (1 - arg['a']['insight'])))  # 更换为1-a_insight
     # arg["ob"] = (lambda x: x)  # 测试公式
 
-    incr_rate = 0.4  # 关系增加速率
+    incr_rate = 0.2  # 关系增加速率
+    arg['d_re_incr_g'] = (lambda old_re: incr_rate * (1 - 0.5 * old_re))  # 计算每次更新多少，可以随意动
     arg["re_incr_g"] = (
-        lambda old_re: (1 - incr_rate) * old_re + incr_rate)  # 表示general的increase，在参加完任意一次集体活动后被调用
+        lambda old_re: max(min(old_re + arg['d_re_incr_g'](old_re), 1), 0))  # 表示general的increase，在参加完任意一次集体活动后被调用
+    # arg['re_incr_g'] = (lambda old_re: (1 - incr_rate) * old_re + incr_rate)
 
     arg['dP_r'] = {
         "other": 0.5,  # 对他人给的计划变化幅度更大
         "self": 0.05  # 对自己的计划变化幅度较小（效能提升小）
     }
     dP_s = 10  # 对变化的敏感度
-    arg["dPower"] = (lambda dF, dP_r: dP_r * rand_shrink(tanh(dP_s * dF), 0.1))
+    arg["dPower"] = (lambda dF, dP_r: dP_r * rand_shrink(tanh(dP_s * dF), 0.2))
 
     arg["pwr_updt_g"] = (lambda old_pwr, dP: (1 - abs(dP)) * old_pwr + 0.5 * (dP + abs(dP)))
     arg["d_pwr_updt_g"] = (lambda old_pwr, dP: arg["pwr_updt_g"](old_pwr, dP) - old_pwr)
@@ -224,27 +226,27 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     # arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0)  # TRUE行动，FALSE不行动
 
     # 行动执行的偏好基础参数
-    xdzx_c = 0  # 行动执行偏好常数
-    xxhq_c = 0
+    xdzx_c = 0.5  # 行动执行偏好常数 default =0
+    hqxx_c = 0
     jhjc_c = 0
     whlj_c = 0
     dyjs_c = 0
     tjzt_c = 0
-    xdzx_ob = 1.5  # ob = odds base
-    xxhq_ob = 1 + agent_arg['a']['xplr']
+    xdzx_ob = 1  # ob = odds base default =1.5
+    hqxx_ob = 1 + agent_arg['a']['xplr']
     jhjc_ob = 1 + agent_arg['a']['xplt']
     whlj_ob = 1 + agent_arg['a']['enable']
     dyjs_ob = 1 + agent_arg['a']['enable']
     tjzt_ob = 1 + agent_arg['a']['enable']
-    xdzx_rp = 1  # 行动执行随pan变化的最大幅度,dplan一定>0
+    xdzx_rp = 0.5  # 行动执行随pan变化的最大幅度,dplan一定>0 default =1
     jhjc_ra = 0.5  # 计划决策随area变化的最大幅度
     arg['ACT'] = {
         'odds': {
             "xdzx": lambda darea, dplan: -1 + exp(xdzx_c + xdzx_ob * (1 + xdzx_rp * tanh(50 * dplan))),
-            "hqxx": lambda darea, dplan: -1 + exp(xxhq_c + xxhq_ob),
+            "hqxx": lambda darea, dplan: -1 + exp(hqxx_c + hqxx_ob),
             "jhjc": lambda darea, dplan: -1 + exp(jhjc_c + jhjc_ob * (1 + jhjc_ra * tanh(50 * darea))),
-            "whlj": lambda darea, dplan: -1 + exp(whlj_c + whlj_ob),
-            "dyjs": lambda darea, dplan: -1 + exp(dyjs_c + dyjs_ob),
+            "whlj": lambda darea, dplan: 0 * (-1 + exp(whlj_c + whlj_ob)),
+            "dyjs": lambda darea, dplan: 0 * (-1 + exp(dyjs_c + dyjs_ob)),
             "tjzt": lambda darea, dplan: 0 * (-1 + exp(tjzt_c + tjzt_ob))  # 先去掉这个选项
         },
         "p": {},
@@ -258,13 +260,15 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
         (1 - max(0, max_power - self_efficacy)) * max_relat ** 2 + max(0, max_power - self_efficacy)
     arg['ACT']['p-cmt']['xtfg'] = lambda max_relat, max_power, self_efficacy: \
         (1 - max(0, max_power - self_efficacy)) * max_relat ** 2 + max(0, max_power - self_efficacy)
-    k_req = 0.1
+    k_req = 0
     arg['ACT']['p-req']['xxjl'] = lambda self_efficacy, host_Cc, host_Cod: \
-        (1 - k_req) * host_Cc ** 2 + k_req
+        min(1.5 * ((1 - k_req) * host_Cc ** 2 + k_req), 1)
     arg['ACT']['p-req']['tljc'] = lambda self_efficacy, host_Cc, host_Cod: \
-        (1 - self_efficacy) * host_Cod ** 2 + self_efficacy
+        min(1.5 * ((1 - host_Cod) * host_Cc ** 2 + host_Cod), 1)  # 新的尝试
+    # (1 - self_efficacy) * host_Cod ** 2 + self_efficacy
     arg['ACT']['p-req']['xtfg'] = lambda self_efficacy, host_Cc, host_Cod: \
-        (1 - self_efficacy) * host_Cod ** 2 + self_efficacy
+        min(1.5 * ((1 - host_Cod) * host_Cc ** 2 + host_Cod), 1)  # 新的尝试
+    # (1 - self_efficacy) * host_Cod ** 2 + self_efficacy
 
     '''
     # 以下为老的代码部分
