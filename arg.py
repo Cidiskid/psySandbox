@@ -16,7 +16,7 @@ def init_global_arg():
         "Nagent": 10,  # Agent数量
         'D_env': True,  # 动态地形开关
         'mul_agent': True,  # 多人互动开关
-        'repeat': 1  # 重复几次同样参数的实验
+        'repeat': 3  # 重复几次同样参数的实验
     }
     return arg
 
@@ -91,10 +91,10 @@ def init_env_arg(global_arg):
         },
         "whlj": {
             "k": global_arg['Nagent'] // 2,
-            "delta_relate": lambda old: 0.01 * (1 - old)  # 改变速率default 0.1，可以手动修改
+            "delta_relate": lambda old: 0.1  # 改变速率default 0.1，可以手动修改
         },
         "dyjs": {
-            "delta_power": lambda old: 0.01 * (1 - old)  # 改变速率default 0.1，可以手动修改
+            "delta_power": lambda old: 0.05  # 改变速率default 0.1，可以手动修改
         }
     }
 
@@ -144,20 +144,21 @@ def init_agent_arg(global_arg, env_arg):
     arg["ob"] = (lambda x: Norm(x, ob_a * (1 - arg['a']['insight'])))  # 更换为1-a_insight
     # arg["ob"] = (lambda x: x)  # 测试公式
 
-    incr_rate = 0.2  # 关系增加速率
+    incr_rate = 0.15  # 关系增加速率
     arg['d_re_incr_g'] = (lambda old_re: incr_rate * (1 - 0.5 * old_re))  # 计算每次更新多少，可以随意动
-    arg["re_incr_g"] = (
-        lambda old_re: max(min(old_re + arg['d_re_incr_g'](old_re), 1), 0))  # 表示general的increase，在参加完任意一次集体活动后被调用
+    arg["re_incr_g"] = lambda old_re: \
+        max(min(old_re + arg['d_re_incr_g'](old_re), 1), 0)  # 表示general的increase，在参加完任意一次集体活动后被调用
     # arg['re_incr_g'] = (lambda old_re: (1 - incr_rate) * old_re + incr_rate)
 
     arg['dP_r'] = {
         "other": 0.5,  # 对他人给的计划变化幅度更大
-        "self": 0.05  # 对自己的计划变化幅度较小（效能提升小）
+        "self": 0.1  # 对自己的计划变化幅度较小（效能提升小）
     }
     dP_s = 10  # 对变化的敏感度
-    arg["dPower"] = (lambda dF, dP_r: dP_r * rand_shrink(tanh(dP_s * dF), 0.2))
+    arg["dPower"] = (lambda dF, dP_r: dP_r * rand_shrink(tanh(dP_s * dF), 0.5))
 
-    arg["pwr_updt_g"] = (lambda old_pwr, dP: (1 - abs(dP)) * old_pwr + 0.5 * (dP + abs(dP)))
+    arg["pwr_updt_g"] = lambda old_pwr, dP:\
+        max(min(((1 - 0.5 * abs(dP)) * old_pwr + 0.5 * (dP + abs(dP))), 1), 0)  # abs(dp)前添加0.5系数,加速变化，留下buffer
     arg["d_pwr_updt_g"] = (lambda old_pwr, dP: arg["pwr_updt_g"](old_pwr, dP) - old_pwr)
 
     arg['default'] = {
@@ -245,29 +246,32 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
             "xdzx": lambda darea, dplan: -1 + exp(xdzx_c + xdzx_ob * (1 + xdzx_rp * tanh(50 * dplan))),
             "hqxx": lambda darea, dplan: -1 + exp(hqxx_c + hqxx_ob),
             "jhjc": lambda darea, dplan: -1 + exp(jhjc_c + jhjc_ob * (1 + jhjc_ra * tanh(50 * darea))),
-            "whlj": lambda darea, dplan: 0 * (-1 + exp(whlj_c + whlj_ob)),
-            "dyjs": lambda darea, dplan: 0 * (-1 + exp(dyjs_c + dyjs_ob)),
+            "whlj": lambda darea, dplan: (-1 + exp(whlj_c + whlj_ob)),
+            "dyjs": lambda darea, dplan: (-1 + exp(dyjs_c + dyjs_ob)),
             "tjzt": lambda darea, dplan: 0 * (-1 + exp(tjzt_c + tjzt_ob))  # 先去掉这个选项
         },
         "p": {},
         "p-cmt": {},
         "p-req": {}
     }
-    k_cmt = 0.5
+    k_cmt = 0
+    amp_cmt = 1.5
     arg['ACT']['p-cmt']['xxjl'] = lambda max_relat, max_power, self_efficacy: \
-        (1 - k_cmt) * max_relat ** 2 + k_cmt
+        min(amp_cmt * ((1 - k_cmt) * max_relat ** 2 + k_cmt), 1)
     arg['ACT']['p-cmt']['tljc'] = lambda max_relat, max_power, self_efficacy: \
-        (1 - max(0, max_power - self_efficacy)) * max_relat ** 2 + max(0, max_power - self_efficacy)
+        min(amp_cmt * ((1 - max(0, max_power - self_efficacy)) * max_relat ** 2 + max(0, max_power - self_efficacy)), 1)
     arg['ACT']['p-cmt']['xtfg'] = lambda max_relat, max_power, self_efficacy: \
-        (1 - max(0, max_power - self_efficacy)) * max_relat ** 2 + max(0, max_power - self_efficacy)
+        min(amp_cmt * ((1 - max(0, max_power - self_efficacy)) * max_relat ** 2 + max(0, max_power - self_efficacy)), 1)
+    # (1 - max(0, max_power - self_efficacy)) * max_relat ** 2 + max(0, max_power - self_efficacy)  # 原公式
     k_req = 0
+    amp_req = 1.5
     arg['ACT']['p-req']['xxjl'] = lambda self_efficacy, host_Cc, host_Cod: \
-        min(1.5 * ((1 - k_req) * host_Cc ** 2 + k_req), 1)
+        min(amp_req * ((1 - k_req) * host_Cc ** 2 + k_req), 1)
     arg['ACT']['p-req']['tljc'] = lambda self_efficacy, host_Cc, host_Cod: \
-        min(1.5 * ((1 - host_Cod) * host_Cc ** 2 + host_Cod), 1)  # 新的尝试
+        min(amp_req * (self_efficacy * (1 - host_Cod) * host_Cc ** 2 + host_Cod + self_efficacy), 1)  # 新的尝试
     # (1 - self_efficacy) * host_Cod ** 2 + self_efficacy
     arg['ACT']['p-req']['xtfg'] = lambda self_efficacy, host_Cc, host_Cod: \
-        min(1.5 * ((1 - host_Cod) * host_Cc ** 2 + host_Cod), 1)  # 新的尝试
+        min(amp_req * (self_efficacy * (1 - host_Cod) * host_Cc ** 2 + host_Cod + self_efficacy), 1)  # 新的尝试
     # (1 - self_efficacy) * host_Cod ** 2 + self_efficacy
 
     '''
