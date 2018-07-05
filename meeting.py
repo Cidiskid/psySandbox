@@ -12,7 +12,8 @@ def meeting_xtfg(env, agents, member, host, socl_net, record, T, Tfi):  # 协调
     assert isinstance(env, Env) and isinstance(socl_net, SoclNet)
     assert isinstance(host, set) and isinstance(member, set)
     assert host.issubset(member)
-    cent_weigh = socl_net.get_power_close_centrality()  # TODO 确认下此处是不是要改为od
+    cent_weigh = socl_net.get_power_out_close_centrality()
+    # cent_weigh = socl_net.get_power_out_degree_centrality()  # 改为od
     plan_pool = []
     # 获取所有host加权后的计划得分的比值
     for x in member:
@@ -30,12 +31,14 @@ def meeting_xtfg(env, agents, member, host, socl_net, record, T, Tfi):  # 协调
 
     for x in member:
         to_commit = plan_pool[random_choice(sample_pool)]['plan']
-        socl_net, agents[x] = acts.act_commit(env, socl_net, x, agents[x], record, T, Tfi, to_commit,member)  # 传入member，以便加入plan.info，后续执行时增强关系
+        socl_net, agents[x] = acts.act_commit(env, socl_net, x, agents[x], record, T, Tfi, to_commit,
+                                              member)  # 传入member，以便加入plan.info，后续执行时增强关系
         # socl_net,agents[x] = acts.act_commit(env, socl_net, x, agents[x],record, T, Tfi, to_commit)
 
     for u in member:
-        for v in range(u):
-            socl_net.relat[u][v]['weight'] = agents[u].agent_arg['re_incr_g'](socl_net.relat[u][v]['weight'])
+        for v in member:
+            if u > v:
+                socl_net.relat[u][v]['weight'] = agents[u].agent_arg['re_incr_g'](socl_net.relat[u][v]['weight'])
 
     return agents, socl_net
 
@@ -50,9 +53,9 @@ def meeting_xxjl(env, agents, member, host, socl_net, record, T, Tfi):  # 信息
         logging.debug("agent%s meeting_now" % x)
         agents[x].meeting_now = 'xxjl'  # 添加当前行动记录
 
-    for x in member:    # 没有进入循环
+    for x in member:  # 没有进入循环
         logging.debug("x:%s in memeber" % x)
-        if not x in host: # 总是为false
+        if not x in host:  # 总是为false
             logging.debug("x:%s not in host" % x)
             socl_net, agents[x] = acts.act_hqxx(env, socl_net, x, agents[x], record, T, Tfi)
     for x in member:
@@ -62,8 +65,9 @@ def meeting_xxjl(env, agents, member, host, socl_net, record, T, Tfi):  # 信息
         agents[x].renew_m_info_list(ret_info, T + Tfi)
 
     for u in member:
-        for v in range(u):
-            socl_net.relat[u][v]['weight'] = agents[u].agent_arg['re_incr_g'](socl_net.relat[u][v]['weight'])
+        for v in member:
+            if u > v:
+                socl_net.relat[u][v]['weight'] = agents[u].agent_arg['re_incr_g'](socl_net.relat[u][v]['weight'])
 
     return agents, socl_net
 
@@ -87,10 +91,12 @@ def meeting_tljc(env, agents, member, host, socl_net, record, T, Tfi):  # 讨论
     fin_plan = max(new_plans, key=lambda plan: plan.goal_value)  # 仅根据goal_value排序，不考虑距离
 
     for x in member:
-        socl_net,agents[x] = acts.act_jhjc(env, socl_net, x, agents[x], record, T, Tfi, fin_plan)
+        socl_net, agents[x] = acts.act_jhjc(env, socl_net, x, agents[x], record, T, Tfi, fin_plan)
+
     for u in member:
-        for v in range(u):
-            socl_net.relat[u][v]['weight'] = agents[u].agent_arg['re_incr_g'](socl_net.relat[u][v]['weight'])
+        for v in member:
+            if u > v:
+                socl_net.relat[u][v]['weight'] = agents[u].agent_arg['re_incr_g'](socl_net.relat[u][v]['weight'])
 
     return agents, socl_net
 

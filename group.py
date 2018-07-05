@@ -44,14 +44,14 @@ class SoclNet:
         for i in self.relat.node():
             for j in range(i):
                 # self.relat.add_weighted_edges_from([(i, j, self.arg['relat_init'])])  #测试稳态用公式
-                self.relat.add_weighted_edges_from([(i, j, self.arg['relat_init'] + unif(-0.15, 0.15))])  # 关系初始值和扰动大小
+                self.relat.add_weighted_edges_from(
+                    [(i, j,
+                      self.arg['relat_init'] + unif(-self.arg['relat_turb'], self.arg['relat_turb']))])  # 关系初始值和扰动大小
         for i in self.power.node():
             for j in self.power.node():
-                if i == j:
-                    self.power.add_weighted_edges_from([(i, j, 0.5 + unif(-0.1, 0.1))])
-                else:
-                    self.power.add_weighted_edges_from([(i, j, self.arg['power_init'])])  # 测试稳态用公式
-                    # self.power.add_weighted_edges_from([(i, j, self.arg['power_init'] + unif(-0.01, 0.01))])
+                if i != j:
+                    self.power.add_weighted_edges_from(
+                        [(i, j, self.arg['power_init'] + unif(-self.arg['power_turb'], self.arg['power_turb']))])
 
     # 初始关系数值为0.5加随机扰动
     def flat_init(self):
@@ -97,10 +97,11 @@ class SoclNet:
         if self.relat[u][v]['weight'] > 1:
             self.relat[u][v]['weight'] = 1
 
-    def get_power_close_centrality(self):
+    def get_power_out_close_centrality(self):
         for u in self.power.nodes:
             for v in self.power.nodes:
-                self.power[u][v]['dist'] = self.arg['pow_w2d'](self.power[u][v]['weight'])
+                if u != v:
+                    self.power[u][v]['dist'] = self.arg['pow_w2d'](self.power[u][v]['weight'])
         return nx.closeness_centrality(G=self.power, distance='dist')
 
     def get_relat_close_centrality(self):
@@ -120,7 +121,7 @@ class SoclNet:
                 if data['weight'] >= self.power_thld:
                     power_bi.add_edge(u, v, weight=1)
 
-        return nx.out_degree_centrality(nx.to_directed(power_bi))
+        return nx.out_degree_centrality(power_bi)
 
     # relat 无向图，不存在od cent的
     # def get_relat_out_degree_centrality(self):

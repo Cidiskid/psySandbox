@@ -86,12 +86,15 @@ def act_jhzx(env, socl_net, agent_no, agent, record, T, Tfi):  # 计划执行
             if "commit" in agent.a_plan.info and agent.a_plan.info['commit']:
                 dp_f_a = agent.a_plan.info['owner']
                 dP_r = agent.agent_arg['dP_r']['other']
+                # 仅对他人的power进行更新
+                if dp_f_a != agent_no:
+                    dP = agent.agent_arg["dPower"](dF, dP_r)
+                    d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
+                    socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
             else:
                 dp_f_a = agent_no
                 dP_r = agent.agent_arg['dP_r']['self']
-            dP = agent.agent_arg["dPower"](dF, dP_r)
-            d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
-            socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
+
         agent.policy_now = 'jhzx_fin'
 
         agent.a_plan = None
@@ -163,7 +166,7 @@ def act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
     assert isinstance(record, Record) and isinstance(socl_net, SoclNet)
     new_plan_value = env.arg['ACT']['jhjc']["plan_eval"](new_plan.len_to_finish(agent.state_now),
                                                          new_plan.goal_value)
-    org_plan_value = env.getValue(agent.state_now)  # TODO cid 如果没有a_plan，至少以当前位置作为plan value
+    org_plan_value = env.getValue(agent.state_now)  # 如果没有a_plan，至少以当前位置作为plan value
     if not agent.a_plan is None:
         org_plan_value = env.arg['ACT']['jhjc']["plan_eval"](agent.a_plan.len_to_finish(agent.state_now),
                                                              agent.a_plan.goal_value)
@@ -178,12 +181,17 @@ def act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
             if "commit" in agent.a_plan.info and agent.a_plan.info['commit']:
                 dp_f_a = new_plan.info['owner']
                 dP_r = agent.agent_arg['dP_r']['other']
+                # 仅对他人的power进行更新
+                if dp_f_a != agent_no:
+                    dP = agent.agent_arg["dPower"](dF, dP_r)
+                    d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
+                    socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
             else:
                 dp_f_a = agent_no
                 dP_r = agent.agent_arg['dP_r']['self']
-            dP = agent.agent_arg["dPower"](dF, dP_r)
-            d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
-            socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
+            # dP = agent.agent_arg["dPower"](dF, dP_r)
+            # d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
+            # socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
         new_plan.info['T_acpt'] = T + Tfi
         agent.a_plan = new_plan
         logging.debug("plan_dist: %s" % agent.a_plan.len_to_finish(agent.state_now))
@@ -197,10 +205,14 @@ def act_commit(env, socl_net, agent_no, agent, record, T, Tfi, new_plan, member)
     assert isinstance(env, Env) and isinstance(agent, Agent)
     assert isinstance(socl_net, SoclNet)
     assert isinstance(new_plan, Plan) and isinstance(record, Record)
-    # 以owener的power为概率接受一个plan，并且commit
-    agent.policy_now = 'commit_f'  # 添加当前行动记录
 
-    if (uniform(0, 1) > socl_net.power[new_plan.info['owner']][agent_no]['weight']):
+    agent.policy_now = 'commit_f'  # 添加当前行动记录
+    # 以owener的power为概率接受一个plan，如果是自身，概率为1
+    p_comit = 1
+    if new_plan.info['owner'] != agent_no:
+        p_comit = socl_net.power[new_plan.info['owner']][agent_no]['weight']
+
+    if (p_comit > uniform(0, 1)):
         # P0-07 同上，覆盖计划前对原计划执行情况进行比较，并更新power
         if not agent.a_plan is None:
             dF = env.getValue(agent.state_now) \
@@ -208,12 +220,17 @@ def act_commit(env, socl_net, agent_no, agent, record, T, Tfi, new_plan, member)
             if "commit" in agent.a_plan.info and agent.a_plan.info['commit']:
                 dp_f_a = new_plan.info['owner']
                 dP_r = agent.agent_arg['dP_r']['other']
+                # 仅对他人的power进行更新
+                if dp_f_a != agent_no:
+                    dP = agent.agent_arg["dPower"](dF, dP_r)
+                    d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
+                    socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
             else:
                 dp_f_a = agent_no
                 dP_r = agent.agent_arg['dP_r']['self']
-            dP = agent.agent_arg["dPower"](dF, dP_r)
-            d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
-            socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
+            # dP = agent.agent_arg["dPower"](dF, dP_r)
+            # d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
+            # socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
         agent.a_plan = deepcopy(new_plan)
         agent.a_plan.info['T_acpt'] = T + Tfi
         agent.a_plan.info['commit'] = True

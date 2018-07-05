@@ -60,7 +60,7 @@ class MulControl:
         # 社会网络初始化
         soclnet_arg = arg.init_soclnet_arg(self.global_arg, env_arg)
         self.socl_net = SoclNet(soclnet_arg)
-        self.socl_net.new_flat_init() # 修改初始化方法
+        self.socl_net.new_flat_init()  # 修改初始化方法
         # self.socl_net.flat_init()
         if all_config['checkpoint']['socl_network']['enable']:
             self.socl_net.power_load(all_config['checkpoint']['socl_network']['power'])
@@ -269,7 +269,7 @@ class MulControl:
 
         stage_num = self.global_arg['T'] // self.global_arg['Ts']
 
-        # self.main_env.getModelDistri() # 为了作图，仅测试时调用！！
+        #self.main_env.getModelDistri()  # 为了作图，仅测试时调用！！
         up_info['nkinfo'] = self.main_env.getModelPeakDistri()  # 将nkinfo变为peakvalue
         # all_peak_value = self.main_env.getAllPeakValue()
         # moniter.DrawHist(all_peak_value, all_config['peak_hist'])

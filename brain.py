@@ -108,8 +108,8 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
     #    logging.debug("meet_req:{}".format(meet_req))
     #    logging.debug("agent_no:{}".format(agent_no))
 
-    self_efficacy = soc_net.power[agent_no][agent_no]['weight']
-    host_Cod = soc_net.get_power_out_degree_centrality()[agent_no]
+    #self_efficacy = soc_net.power[agent_no][agent_no]['weight']
+    host_Coc = soc_net.get_power_out_close_centrality()[agent_no]
     host_Cc = soc_net.get_relat_close_centrality()[agent_no]
     max_relat = {m_name: max([soc_net.relat[x][agent_no]['weight'] for x in meet_req[m_name]])
                  for m_name in meet_req}
@@ -120,7 +120,7 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
     if use_police == "hqxx_xxjl":
         if 'xxjl' in meet_req:
             # p-cmt：接受概率
-            commit_p = agent.frame_arg["ACT"]["p-cmt"]["xxjl"](max_relat['xxjl'], max_power['xxjl'], self_efficacy)
+            commit_p = agent.frame_arg["ACT"]["p-cmt"]["xxjl"](max_relat['xxjl'], max_power['xxjl'])
             if (commit_p > uniform(0, 1)):
                 return agent, soc_net, {"type": "commit", "name": "xxjl"}
         # 没有会议，直接进行单人的获取信息hqxx行动
@@ -130,20 +130,20 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
         # 如果获得比之前更好的区域，考虑召集会议一起制定计划，进行讨论决策tljc
         if (last_agent.get_max_area().info['max'] < agent.get_max_area().info['max']):
             # P1-02 同样用lambda表达式传回
-            p_req_tljc = agent.frame_arg["ACT"]["p-req"]["tljc"](self_efficacy, host_Cc, host_Cod)
+            p_req_tljc = agent.frame_arg["ACT"]["p-req"]["tljc"](host_Cc, host_Coc)
             if p_req_tljc > uniform(0, 1):
                 agent.meeting_now = "tljc_req"  # 发起讨论决策会议
                 meet_info = {"type": "req", "name": "tljc"}
         # 如果没有获得更好的区域，考虑召集会议进行信息交流xxjl
         else:
-            p_req_xxjl = agent.frame_arg["ACT"]["p-req"]["xxjl"](self_efficacy, host_Cc, host_Cod)
+            p_req_xxjl = agent.frame_arg["ACT"]["p-req"]["xxjl"]( host_Cc, host_Coc)
             if p_req_xxjl > uniform(0, 1):
                 agent.meeting_now = 'xxjl_req'  # 发起信息交流会议
                 meet_info = {"type": "req", "name": "xxjl"}
         return agent, soc_net, meet_info
     elif use_police == "jhjc_tljc":
         if 'tljc' in meet_req:
-            p_cmt = agent.frame_arg["ACT"]['p-cmt']['tljc'](max_relat["tljc"], max_power['tljc'], self_efficacy)
+            p_cmt = agent.frame_arg["ACT"]['p-cmt']['tljc'](max_relat["tljc"], max_power['tljc'])
             if (p_cmt > uniform(0, 1)):
                 return agent, soc_net, {"type": "commit", "name": "tljc"}
         last_agent = deepcopy(agent)
@@ -151,14 +151,14 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
         (soc_net, agent) = acts.act_jhnd(env, soc_net, agent_no, agent, record, Ti, Tfi)
         if not agent.a_plan is None:  # 保证有计划
             if (last_agent.a_plan is None or last_agent.a_plan.goal_value < agent.a_plan.goal_value):  # 如果获取了新计划会提议行动
-                p_req = agent.frame_arg["ACT"]['p-req']['xtfg'](self_efficacy, host_Cc, host_Cod)
+                p_req = agent.frame_arg["ACT"]['p-req']['xtfg'](host_Cc, host_Coc)
                 if p_req > uniform(0, 1):
                     agent.meeting_now = 'xtfg_req'  # 发起信息交流会议
                     meet_info = {"type": "req", "name": "xtfg"}
         return agent, soc_net, meet_info
     elif use_police == "xdzx_xtfg":
         if 'xtfg' in meet_req:
-            p_cmt = agent.frame_arg["ACT"]['p-cmt']['xtfg'](max_relat["xtfg"], max_power['xtfg'], self_efficacy)
+            p_cmt = agent.frame_arg["ACT"]['p-cmt']['xtfg'](max_relat["xtfg"], max_power['xtfg'])
             if (p_cmt > uniform(0, 1)):
                 return agent, soc_net, {"type": "commit", "name": "xtfg"}
         last_agent = deepcopy(agent)
