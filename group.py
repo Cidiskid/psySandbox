@@ -84,6 +84,7 @@ class SoclNet:
             self.relat[u][v]['weight'] *= cd_rate
 
     def power_delta(self, u, v, delta):
+        assert u != v
         self.power[u][v]['weight'] += delta
         if self.power[u][v]['weight'] < 0:
             self.power[u][v]['weight'] = 0
@@ -91,6 +92,7 @@ class SoclNet:
             self.power[u][v]['weight'] = 1
 
     def relat_delta(self, u, v, delta):
+        assert u != v
         self.relat[u][v]['weight'] += delta
         if self.relat[u][v]['weight'] < 0:
             self.relat[u][v]['weight'] = 0

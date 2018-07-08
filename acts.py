@@ -6,7 +6,7 @@ from copy import deepcopy
 from math import exp
 from env import Area, get_area_sample_distr, Env
 from group import SoclNet
-from util.util import max_choice, norm_softmax, random_choice
+from util.util import max_choice, norm_softmax, norm_softmaxamp10, random_choice
 from agent import Agent, Plan
 from record import Record
 import arg
@@ -83,14 +83,18 @@ def act_jhzx(env, socl_net, agent_no, agent, record, T, Tfi):  # 计划执行
         if not agent.a_plan is None:
             dF = env.getValue(agent.state_now) \
                  - record.get_agent_record(agent_no, agent.a_plan.info['T_acpt'])["value"]
-            if "commit" in agent.a_plan.info and agent.a_plan.info['commit']:
-                dp_f_a = agent.a_plan.info['owner']
-                dP_r = agent.agent_arg['dP_r']['other']
-                # 仅对他人的power进行更新
-                if dp_f_a != agent_no:
-                    dP = agent.agent_arg["dPower"](dF, dP_r)
-                    d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
-                    socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
+            # if "commit" in agent.a_plan.info and agent.a_plan.info['commit']:  # 意味着来自tljc的plan就不更新了？
+            dp_f_a = agent.a_plan.info['owner']
+            dP_r = agent.agent_arg['dP_r']['other']
+            # 仅对他人的power进行更新
+            if dp_f_a != agent_no:
+                dP = agent.agent_arg["dPower"](dF, dP_r)
+                d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
+                logging.debug("pwr change: from:%s,to:%s,dp:%.5s" % (dp_f_a, agent_no, d_pwr_updt_g))
+                socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
+                if d_pwr_updt_g < 0:  # 如果结果不好，还要扣关系分
+                    d_re_updt_g = d_pwr_updt_g
+                    socl_net.relat_delta(dp_f_a, agent_no, d_re_updt_g)
             else:
                 dp_f_a = agent_no
                 dP_r = agent.agent_arg['dP_r']['self']
@@ -150,12 +154,14 @@ def act_hqxx(env, socl_net, agent_no, agent, record, T, Tfi):  # 获取信息
     new_area.info = get_area_sample_distr(env=env, area=new_area, T_stmp=T + Tfi, state=agent.state_now,
                                           sample_num=env.arg['ACT']['hqxx']['sample_n'],
                                           dfs_r=env.arg['ACT']['hqxx']['dfs_p'])
+
     # 加ob扰动
     for k in new_area.info:
         new_area.info[k] = agent.agent_arg['ob'](new_area.info[k])
 
     # 把信息更新到状态中
     agent.renew_m_info(new_area, T + Tfi)
+    logging.debug(len(agent.frame_arg['PSM']['m-info']))
     agent.policy_now = 'hqxx'  # 添加当前行动记录
     logging.debug(agent.policy_now)
     return socl_net, agent
@@ -178,14 +184,18 @@ def act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
         if not agent.a_plan is None:
             dF = env.getValue(agent.state_now) \
                  - record.get_agent_record(agent_no, agent.a_plan.info['T_acpt'])["value"]
-            if "commit" in agent.a_plan.info and agent.a_plan.info['commit']:
-                dp_f_a = new_plan.info['owner']
-                dP_r = agent.agent_arg['dP_r']['other']
-                # 仅对他人的power进行更新
-                if dp_f_a != agent_no:
-                    dP = agent.agent_arg["dPower"](dF, dP_r)
-                    d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
-                    socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
+            #if "commit" in agent.a_plan.info and agent.a_plan.info['commit']:
+            dp_f_a = new_plan.info['owner']
+            dP_r = agent.agent_arg['dP_r']['other']
+            # 仅对他人的power进行更新
+            if dp_f_a != agent_no:
+                dP = agent.agent_arg["dPower"](dF, dP_r)
+                d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
+                logging.debug("pwr change: from:%s,to:%s,dp:%.5s" % (dp_f_a, agent_no, d_pwr_updt_g))
+                socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
+                if d_pwr_updt_g < 0:  # 如果结果不好，还要扣关系分
+                    d_re_updt_g = d_pwr_updt_g
+                    socl_net.relat_delta(dp_f_a, agent_no, d_re_updt_g)
             else:
                 dp_f_a = agent_no
                 dP_r = agent.agent_arg['dP_r']['self']
@@ -217,14 +227,18 @@ def act_commit(env, socl_net, agent_no, agent, record, T, Tfi, new_plan, member)
         if not agent.a_plan is None:
             dF = env.getValue(agent.state_now) \
                  - record.get_agent_record(agent_no, agent.a_plan.info['T_acpt'])["value"]
-            if "commit" in agent.a_plan.info and agent.a_plan.info['commit']:
-                dp_f_a = new_plan.info['owner']
-                dP_r = agent.agent_arg['dP_r']['other']
-                # 仅对他人的power进行更新
-                if dp_f_a != agent_no:
-                    dP = agent.agent_arg["dPower"](dF, dP_r)
-                    d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
-                    socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
+            #if "commit" in agent.a_plan.info and agent.a_plan.info['commit']:
+            dp_f_a = new_plan.info['owner']
+            dP_r = agent.agent_arg['dP_r']['other']
+            # 仅对他人的power进行更新
+            if dp_f_a != agent_no:
+                dP = agent.agent_arg["dPower"](dF, dP_r)
+                d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
+                logging.debug("pwr change: from:%s,to:%s,dp:%.5s" % (dp_f_a, agent_no, d_pwr_updt_g))
+                socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
+                if d_pwr_updt_g < 0:  # 如果结果不好，还要扣关系分
+                    d_re_updt_g = d_pwr_updt_g
+                    socl_net.relat_delta(dp_f_a, agent_no, d_re_updt_g)
             else:
                 dp_f_a = agent_no
                 dP_r = agent.agent_arg['dP_r']['self']
@@ -286,13 +300,20 @@ def act_dyjs(env, socl_net, agent_no, agent, record, T, Tfi):
     assert isinstance(socl_net, SoclNet)
     global_arg = arg.init_global_arg()
     # 根据对自己影响的大小选择强化对象
-    out_power = [socl_net.power[x][agent_no]['weight'] for x in range(global_arg["Nagent"])]
-    to_power = random_choice(norm_softmax(out_power))
-    for aim in range(global_arg['Nagent']):
-        delta = env.arg['ACT']['dyjs']['delta_power'](socl_net.power[to_power][aim]['weight'])
-        socl_net.power_delta(to_power, aim, delta)
-
-    agent.policy_now = 'dyjs'  # 添加当前行动记录
+    out_power = []
+    agent.policy_now = 'dyjs_noaim'  # 添加当前行动记录
+    for x in range(global_arg["Nagent"]):
+        if x != agent_no:
+            out_power.append(socl_net.power[x][agent_no]['weight'])
+        elif x == agent_no:
+            out_power.append(0)
+    if max(out_power) > socl_net.arg['power_thld']:
+        to_power = random_choice(norm_softmax(out_power))
+        for aim in range(global_arg['Nagent']):
+            if aim != to_power:
+                delta = env.arg['ACT']['dyjs']['delta_power'](socl_net.power[to_power][aim]['weight'])
+                socl_net.power_delta(to_power, aim, delta)
+        agent.policy_now = 'dyjs'  # 添加当前行动记录
 
     logging.debug(agent.policy_now)
     return socl_net, agent

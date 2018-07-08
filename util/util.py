@@ -33,6 +33,13 @@ def softmax(items):
         sume = sum([exp(items[key]) for key in items])
         return {key: exp(items[key]) / sume for key in items}
 
+def softmaxamp10(items):
+    if (type(items) is list):
+        sume = sum([exp(10*key) for key in items])
+        return [exp(10*key) / sume for key in items]
+    else:
+        sume = sum([exp(10*items[key]) for key in items])
+        return {key: exp(10*items[key]) / sume for key in items}
 
 def softmaxM1(items):
     if (type(items) is list):
@@ -89,6 +96,8 @@ def listnorm(items):
 def norm_softmax(items):
     return softmax(listnorm(items))
 
+def norm_softmaxamp10(items):
+    return softmaxamp10(listnorm(items))
 
 def rand_shrink(num, ratio):
     assert num >= -1

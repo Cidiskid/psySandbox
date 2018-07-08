@@ -55,6 +55,8 @@ def sgl_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
             "jhjc_tljc": agent.frame_arg['ACT']['odds']['jhjc'](darea, dplan),
             "xdzx_xtfg": agent.frame_arg['ACT']['odds']['xdzx'](darea, dplan)
             }
+    if env.getValue(agent.state_now) == 1:
+        prob['xdzx_xtfg'] = 0  # 如果已经到达1，不再行动
     logging.debug("agent_no:%.d, dplan:%.5s, darea:%.5s,prob:%s" % (agent_no, dplan, darea, prob))
 
     use_police = util.random_choice(prob)  # 根据概率参数随机选择一种行动策略
@@ -101,6 +103,8 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
             "dyjs": agent.frame_arg['ACT']['odds']['dyjs'](darea, dplan),
             "tjzt": agent.frame_arg['ACT']['odds']['tjzt'](darea, dplan)
             }
+    if env.getValue(agent.state_now) == 1:
+        prob['xdzx_xtfg'] = 0  # 如果已经到达1，不再行动
     logging.debug("agent_no:%.d, dplan:%.5s, darea:%.5s,prob:%s" % (agent_no, dplan, darea, prob))
 
     use_police = util.random_choice(prob)  # 根据概率参数随机选择一种行动策略
@@ -108,7 +112,7 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
     #    logging.debug("meet_req:{}".format(meet_req))
     #    logging.debug("agent_no:{}".format(agent_no))
 
-    #self_efficacy = soc_net.power[agent_no][agent_no]['weight']
+    # self_efficacy = soc_net.power[agent_no][agent_no]['weight']
     host_Coc = soc_net.get_power_out_close_centrality()[agent_no]
     host_Cc = soc_net.get_relat_close_centrality()[agent_no]
     max_relat = {m_name: max([soc_net.relat[x][agent_no]['weight'] for x in meet_req[m_name]])
@@ -136,7 +140,7 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
                 meet_info = {"type": "req", "name": "tljc"}
         # 如果没有获得更好的区域，考虑召集会议进行信息交流xxjl
         else:
-            p_req_xxjl = agent.frame_arg["ACT"]["p-req"]["xxjl"]( host_Cc, host_Coc)
+            p_req_xxjl = agent.frame_arg["ACT"]["p-req"]["xxjl"](host_Cc, host_Coc)
             if p_req_xxjl > uniform(0, 1):
                 agent.meeting_now = 'xxjl_req'  # 发起信息交流会议
                 meet_info = {"type": "req", "name": "xxjl"}
@@ -151,9 +155,9 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
         (soc_net, agent) = acts.act_jhnd(env, soc_net, agent_no, agent, record, Ti, Tfi)
         if not agent.a_plan is None:  # 保证有计划
             if (last_agent.a_plan is None or last_agent.a_plan.goal_value < agent.a_plan.goal_value):  # 如果获取了新计划会提议行动
-                p_req = agent.frame_arg["ACT"]['p-req']['xtfg'](host_Cc, host_Coc)
-                if p_req > uniform(0, 1):
-                    agent.meeting_now = 'xtfg_req'  # 发起信息交流会议
+                p_req_xtfg = agent.frame_arg["ACT"]['p-req']['xtfg'](host_Cc, host_Coc)
+                if p_req_xtfg > uniform(0, 1):
+                    agent.meeting_now = 'xtfg_req'  # 发起协调分工会议
                     meet_info = {"type": "req", "name": "xtfg"}
         return agent, soc_net, meet_info
     elif use_police == "xdzx_xtfg":
@@ -165,13 +169,18 @@ def mul_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
         agent.meeting_now = ''  # 不参加会议
         (soc_net, agent) = acts.act_xdzx(env, soc_net, agent_no, agent, record, Ti, Tfi)
 
-        # 如果计划执行完了(没计划)，或新的计划比原来好，召集讨论决策？
-        # 行动执行完后发起讨论感觉有点奇怪，我先删掉这一段
-        # if ((last_agent.a_plan is None) or (
-        #        not agent.a_plan is None and last_agent.a_plan.goal_value < agent.a_plan.goal_value)):
-        #    if soc_net.power[agent_no][agent_no]['weight'] > uniform(0, 1):
-        #        meet_info = {"type": "req", "name": "tljc"}
-
+        # 如果计划执行完了(没计划)，发起xxjl
+        if agent.a_plan is None:
+            p_req_xxjl = agent.frame_arg["ACT"]["p-req"]["xxjl"](host_Cc, host_Coc)
+            if p_req_xxjl > uniform(0, 1):
+                agent.meeting_now = 'xxjl_req'  # 发起信息交流会议
+                meet_info = {"type": "req", "name": "xxjl"}
+        elif agent.a_plan.info['owner'] == agent_no \
+                and Ti + Tfi - agent.a_plan.info['T_acpt'] < 8:  # 如果是自己的计划，且计划更新在8帧以内,会再次发动
+            p_req_xtfg = agent.frame_arg["ACT"]['p-req']['xtfg'](host_Cc, host_Coc)
+            if p_req_xtfg > uniform(0, 1):
+                agent.meeting_now = 'xtfg_req'  # 发起协调分工会议
+                meet_info = {"type": "req", "name": "xtfg"}
         return agent, soc_net, meet_info
     elif use_police == "whlj":
         agent.meeting_now = ''  # 不参加会议

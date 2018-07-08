@@ -25,7 +25,7 @@ class MulControl:
         self.main_env.nkmodel_save(all_config["nkmodel_path"])
         # 个体初始化
         self.agents = []
-        csv_head_agent = ['agent_no'] + ['st_state'] + ['insight'] + ['xplr'] + ['xplt'] + ['enable']
+        csv_head_agent = ['agent_no'] + ['st_state'] + ['st_value'] + ['insight'] + ['xplr'] + ['xplt'] + ['enable']
         moniter.AppendToCsv(csv_head_agent, all_config['agent_csv_path'])
         for i in range(self.global_arg["Nagent"]):
             # 个体随机初始位置
@@ -36,14 +36,15 @@ class MulControl:
                                      self.main_env))
             self.agents[i].state_now = deepcopy(state_start)
 
-            # TODO cid 去除了一开始给一个全局area，改为添加一个包含起点的点area
+            # 去除了一开始给一个全局area，改为添加一个包含起点的点area
             start_area = Area(self.agents[i].state_now, [False] * self.main_env.N, 0)
             start_area.info = get_area_sample_distr(env=self.main_env, area=start_area, state=self.agents[i].state_now,
                                                     T_stmp=0, sample_num=1, dfs_r=1)
             self.agents[i].renew_m_info(start_area, 0)
             self.a_plan = None
-            logging.info("state:%s, insight:%.5s ,xplr:%.5s, xplt:%.5s, enable:%.5s" % (
+            logging.info("state:%s, st_value:%s,insight:%.5s ,xplr:%.5s, xplt:%.5s, enable:%.5s" % (
                 str(self.agents[i].state_now),
+                self.main_env.getValue(self.agents[i].state_now, 0),
                 self.agents[i].agent_arg['a']['insight'],
                 self.agents[i].agent_arg['a']['xplr'],
                 self.agents[i].agent_arg['a']['xplt'],
@@ -51,6 +52,7 @@ class MulControl:
             # 记录agent信息
             csv_info_agent = ['agent%d' % i] \
                              + [self.agents[i].state_now] \
+                             + [self.main_env.getValue(self.agents[i].state_now, 0)] \
                              + [self.agents[i].agent_arg['a']['insight']] \
                              + [self.agents[i].agent_arg['a']['xplr']] \
                              + [self.agents[i].agent_arg['a']['xplt']] \
@@ -232,7 +234,7 @@ class MulControl:
                            + act_list
             moniter.AppendToCsv(csv_info_act, all_config['act_csv_path'])
 
-            # TODO @wzk 按stage输出
+            # 按stage输出
         if self.global_arg['mul_agent']:
             # net_title, net_data = self.record.output_socl_net_per_frame(Ti + i)
             power_save_path = os.path.join(all_config['network_csv_path'], "power_%04d.csv" % (Ti))
@@ -269,7 +271,7 @@ class MulControl:
 
         stage_num = self.global_arg['T'] // self.global_arg['Ts']
 
-        #self.main_env.getModelDistri()  # 为了作图，仅测试时调用！！
+        # self.main_env.getModelDistri()  # 为了作图，仅测试时调用！！
         up_info['nkinfo'] = self.main_env.getModelPeakDistri()  # 将nkinfo变为peakvalue
         # all_peak_value = self.main_env.getAllPeakValue()
         # moniter.DrawHist(all_peak_value, all_config['peak_hist'])
@@ -301,6 +303,7 @@ if __name__ == '__main__':
     batch_id = '_'.join([
         'batch',
         time.strftime("%Y%m%d-%H%M%S"),
+        "NA" + str(global_arg['Nagent']),
         "N" + str(env_arg['N']),
         "K" + str(env_arg['K']),
         "P" + str(env_arg['P']),

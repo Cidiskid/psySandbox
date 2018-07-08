@@ -13,7 +13,7 @@ def init_global_arg():
     arg = {
         'T': 256,  # default7.4 256 模拟总时间
         "Ts": 8,  # default7.4 8 每个stage的帧数
-        "Nagent": 10,  # default7.4 10 Agent数量
+        "Nagent": 24,  # default7.4 10 Agent数量
         'D_env': True,  # 动态地形开关
         'mul_agent': True,  # 多人互动开关
         'repeat': 1  # 重复几次同样参数的实验
@@ -32,7 +32,7 @@ def init_env_arg(global_arg):
         'dynamic': global_arg['D_env'],  # 动态地形开关
         'sigma': 0.095,  # default7.4 0.095
         'mu': 0.5,  # default7.4 0.5
-        'value2ret': (lambda real_value: min(max(0.5 + 0.5 * (real_value - arg['mu']) / (2.58 * arg['sigma']), 0), 1))
+        'value2ret': (lambda real_value: min(max(0.5 + 0.5 * (real_value - arg['mu']) / (3 * arg['sigma']), 0), 1))
         # default7.4 99%截断，并将区间调整为[0，1]
         # 'value2ret': (lambda real_value: real_value)  # 原始值
     }
@@ -69,7 +69,7 @@ def init_env_arg(global_arg):
         'xdzx': {
             # 执行计划的概率
             'do_plan_p': (
-                lambda st_val, dist, trgt: 0.5 + 0.5 * tanh(50 * (arg['plan']['eval'](dist, trgt) - st_val))),
+                lambda st_val, dist, trgt: 0.5 + 0.5 * tanh(10 * (arg['plan']['eval'](dist, trgt) - st_val))),
             'kT0': 0.05,  # default7.4 0.05
             'cool_down': 0.95,  # default7.4 0.95
         },
@@ -78,7 +78,7 @@ def init_env_arg(global_arg):
             "mask_n": 2,  # default7.4 2 区域的方向夹角大小，指区域内的点中允许变化的位点数量
             "dist": 6,  # default7.4 6 区域半径，所有点和中心点的最大距离
             "dfs_p": 0.5,  # default7.4 0.5 表示多大概率往深了走
-            "sample_n": 30  # default7.4 30 从区域中抽样的数量
+            "sample_n": 20  # default7.4 30 从区域中抽样的数量
         },
         # 计划拟定相关参数表
         'jhnd': {
@@ -114,9 +114,9 @@ def init_soclnet_arg(global_arg, env_arg):
     arg['Nagent'] = global_arg['Nagent']
     arg['power_thld'] = 0.7  # default7.4 0.7
     arg['relat_thld'] = 0.7  # default7.4 0.7
-    arg['relat_init'] = 0.6  # default7.4 0.5
+    arg['relat_init'] = 0.5  # default7.4 0.5
     arg['relat_turb'] = 0.15  # default7.4 0.15
-    arg['power_init'] = 0.3  # default7.4 0.5
+    arg['power_init'] = 0.25  # default7.4 0.5
     arg['power_turb'] = 0.15  # default7.4 0.15
 
     # 权重到距离的转化公式
@@ -133,11 +133,11 @@ def init_agent_arg(global_arg, env_arg):
     arg['a'] = {
         "insight": clip_rsmp(0.001, 9.999, paretovariate, alpha=1) / 10,  # 环境感知能力 base 模式
         # "insight": clip_rsmp(0.55, 0.85, uniform, a=0.55, b=0.85), # expert模式
-        "act": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.1),  # default Norm(0, 0.1),  # 行动意愿
-        "xplr": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.3),  # default Norm(0, 0.2),  # 探索倾向
-        "xplt": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.3),  # default Norm(0, 0.2),  # 利用倾向
-        # "enable": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.1),  # default Norm(0, 0.1), # 增加波动范围
-        "enable": clip_rsmp(-0.999, 0.999, uniform, a=-0.8, b=-0.2),  # 对事不对人（不管团队无enable）模式
+        "act": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.1),  # default7.4  Norm(0, 0.1),  # 行动意愿
+        "xplr": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.3),  # default7.4  Norm(0, 0.3),  # 探索倾向
+        "xplt": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.3),  # default7.4  Norm(0, 0.3),  # 利用倾向
+        "enable": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.3),  # default7.4  Norm(0, 0.1), # 增加波动范围
+        # "enable": clip_rsmp(-0.999, 0.999, uniform, a=-0.8, b=-0.2),  # 对事不对人（不管团队无enable）模式
         # "se": clip_rsmp(0.001, 0.999, Norm, mu=arg['a']["insight"], sigma=0.1)
         "rmb": 64
     }
@@ -157,9 +157,9 @@ def init_agent_arg(global_arg, env_arg):
         "other": 0.5,  # default7.4 0.5 对他人给的计划变化幅度更大
         "self": 0.1  # default7.4 0.1 对自己的计划变化幅度较小（效能提升小）
     }
-    dP_s = 10  # default7.4 10 对变化的敏感度
-    arg["dPower"] = (lambda dF, dP_r: dP_r * rand_shrink(tanh(dP_s * dF), 0.5))
-
+    dP_s = 50  # default7.4 10 对变化的敏感度
+    # arg["dPower"] = (lambda dF, dP_r: dP_r * tanh(dP_s * dF))
+    arg["dPower"] = (lambda dF, dP_r: dP_r * rand_shrink(tanh(dP_s * dF), 0.5))  # default7.4
     arg["pwr_updt_g"] = lambda old_pwr, dP: \
         max(min(((1 - 0.5 * abs(dP)) * old_pwr + 0.5 * (dP + abs(dP))), 1), 0)  # abs(dp)前添加0.5系数,加速变化，留下buffer
     # default7.4 max(min(((1 - 0.5 * abs(dP)) * old_pwr + 0.5 * (dP + abs(dP))), 1), 0)  # abs(dp)前添加0.5系数,加速变化，留下buffer
@@ -231,17 +231,17 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     # arg['PROC']['action'] = (Norm(arg['PROC']['a-m'] - arg['PROC']['a-th'], 0.1) > 0)  # TRUE行动，FALSE不行动
 
     # 行动执行的偏好基础参数
-    xdzx_c = 0.5  # default7.4 0.5 行动执行偏好常数
-    hqxx_c = 0  # default7.4 0
-    jhjc_c = 0
-    whlj_c = 0
+    xdzx_c = 2  # default7.4 0.5 行动执行偏好常数
+    hqxx_c = 2  # default7.4 0
+    jhjc_c = 1.5  # default7.4 0
+    whlj_c = 0.5
     dyjs_c = 0
     tjzt_c = 0
     xdzx_ob = 1  # ob = odds base default7.4 1
-    hqxx_ob = 1 + agent_arg['a']['xplr']
-    jhjc_ob = 1 + agent_arg['a']['xplt']
-    whlj_ob = 1 + agent_arg['a']['enable']
-    dyjs_ob = 1 + agent_arg['a']['enable']
+    hqxx_ob = 1 + 0.5 * agent_arg['a']['xplr']
+    jhjc_ob = 1 + 0.5 * agent_arg['a']['xplt']
+    whlj_ob = 1 + 0.5 * agent_arg['a']['enable']
+    dyjs_ob = 1 + 0.5 * agent_arg['a']['enable']
     tjzt_ob = 1 + agent_arg['a']['enable']
     xdzx_rp = 0.5  # 行动执行随pan变化的最大幅度,dplan一定>0 default7.4 0.5
     jhjc_ra = 0.5  # 计划决策随area变化的最大幅度 default7.4 0.5
@@ -250,8 +250,8 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
             "xdzx": lambda darea, dplan: -1 + exp(xdzx_c + xdzx_ob * (1 + xdzx_rp * tanh(50 * dplan))),
             "hqxx": lambda darea, dplan: -1 + exp(hqxx_c + hqxx_ob),
             "jhjc": lambda darea, dplan: -1 + exp(jhjc_c + jhjc_ob * (1 + jhjc_ra * tanh(50 * darea))),
-            "whlj": lambda darea, dplan: 0 * (-1 + exp(whlj_c + whlj_ob)),
-            "dyjs": lambda darea, dplan: 0 * (-1 + exp(dyjs_c + dyjs_ob)),
+            "whlj": lambda darea, dplan: -1 + exp(whlj_c + whlj_ob),
+            "dyjs": lambda darea, dplan: -1 + exp(dyjs_c + dyjs_ob),
             "tjzt": lambda darea, dplan: 0 * (-1 + exp(tjzt_c + tjzt_ob))  # 先去掉这个选项
         },
         "p": {},
@@ -259,7 +259,7 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
         "p-req": {}
     }
     k_cmt = 0
-    amp_cmt = 1.5
+    amp_cmt = 1  # default7.4 1.5
     arg['ACT']['p-cmt']['xxjl'] = lambda max_relat, max_power: \
         min(amp_cmt * ((1 - k_cmt) * max_relat ** 2 + k_cmt), 1)
     arg['ACT']['p-cmt']['tljc'] = lambda max_relat, max_power: \
@@ -268,7 +268,7 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
         min(amp_cmt * ((1 - max_power) * max_relat ** 2 + max_power), 1)
     # (1 - max(0, max_power - self_efficacy)) * max_relat ** 2 + max(0, max_power - self_efficacy)  # 原公式
     k_req = 0
-    amp_req = 1.5
+    amp_req = 1.2  # default7.4 1.5
     arg['ACT']['p-req']['xxjl'] = lambda host_Cc, host_Coc: \
         min(amp_req * ((1 - k_req) * host_Cc ** 2 + k_req), 1)
     arg['ACT']['p-req']['tljc'] = lambda host_Cc, host_Coc: \
@@ -278,26 +278,5 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
         min(amp_req * ((1 - host_Coc) * host_Cc ** 2 + host_Coc), 1)  # default7.4
     # (1 - self_efficacy) * host_Cod ** 2 + self_efficacy
 
-    '''
-    # 以下为老的代码部分
-    # 以下参数用于确定采取何种行动的过程
-    xdzx_a = 0.5
-    arg['ACT']['p']['xdzx'] = xdzx_a * last_arg['ACT']['p']['xdzx'] + (1 - xdzx_a) * 0.5  # 行动执行的偏好是常数，为0.5
 
-    hqxx_a = 0.5
-    f2 = 1 - tanh(10 * (last_arg['PSM']['s-sc'] - 0.8 * arg['PSM']['f-req']))
-    g2 = 1 + 0.2 * tanh(5 * (agent_arg['a']['xplr'] - 0.5))
-    h2 = 1 + 0.1 * cos(pi * (arg['PSM']["p-ugt"] - 0.5))
-    l2 = 1 + 0.2 * tanh(5 * (arg['PSM']['p-cplx'] - 0.5))
-    arg['ACT']['p']['hqxx'] = hqxx_a * last_arg['ACT']['p']['hqxx'] + (1 - hqxx_a) * f2 * g2 * h2 * l2
-
-    f3 = 1 + tanh(5 * (last_arg['PSM']['s-sc'] - 0.8 * arg['PSM']['f-req']))
-    g3 = 1 + 0.2 * tanh(5 * (agent_arg['a']['xplt'] - 0.5))
-    h3 = 2 + tanh(5 * (arg["PSM"]['p-ugt'] - 1))
-    jhnd_a = 0.5
-    arg['ACT']['p']['jhnd'] = jhnd_a * last_arg['ACT']['p']['jhnd'] + (1 - jhnd_a) * f3 * g3 * h3
-    if (len(arg['PSM']['m-plan']) < 1):
-        arg['ACT']['p']['jhnd'] = 0
-    arg['ACT']['choice'] = random_choice(softmaxM1(arg['ACT']['p']))
-    '''
     return arg

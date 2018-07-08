@@ -243,8 +243,8 @@ class Env:
                 t = self.T_clock
             value_st = self.models["st"].getValue(state)
             value_ed = self.models["ed"].getValue(state)
-            w_st = 0.6  # default 0.6
-            w_ed = 0.4  # default 0.4
+            w_st = 0.8  # default 0.6
+            w_ed = 0.2  # default 0.4
             value_ret = self.arg['value2ret'](
                 w_st * value_st + w_ed * value_ed + (w_st - w_ed) * (value_ed - value_st) * t / self.T)
             return round(value_ret, 4)
