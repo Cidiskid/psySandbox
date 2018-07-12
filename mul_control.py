@@ -337,6 +337,9 @@ if __name__ == '__main__':
 
         try:
             os.mkdir(os.path.join("result", all_config['batch_id'], exp_id))
+        except:
+            pass
+        try:
             os.mkdir(os.path.join("result", all_config['batch_id'], exp_id, 'detail'))
         except:
             pass
