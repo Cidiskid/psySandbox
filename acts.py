@@ -307,7 +307,7 @@ def act_dyjs(env, socl_net, agent_no, agent, record, T, Tfi):
             out_power.append(socl_net.power[x][agent_no]['weight'])
         elif x == agent_no:
             out_power.append(0)
-    if max(out_power) > socl_net.arg['power_thld']:
+    if max(out_power) > socl_net.arg['power_thld']:  # 对自己影响力大于一个阈值的人才会考虑定义角色
         to_power = random_choice(norm_softmax(out_power))
         for aim in range(global_arg['Nagent']):
             if aim != to_power:

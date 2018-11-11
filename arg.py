@@ -13,10 +13,10 @@ def init_global_arg():
     arg = {
         'T': 256,  # default7.4 256 模拟总时间
         "Ts": 8,  # default7.4 8 每个stage的帧数
-        "Nagent": 24,  # default7.4 10 Agent数量
+        "Nagent": 16,  # default7.4 10 Agent数量
         'D_env': True,  # 动态地形开关
-        'mul_agent': True,  # 多人互动开关
-        'repeat': 36  # 重复几次同样参数的实验
+        'mul_agent': False,  # 多人互动开关
+        'repeat': 1  # 重复几次同样参数的实验
     }
     return arg
 
@@ -112,7 +112,7 @@ def init_env_arg(global_arg):
 def init_soclnet_arg(global_arg, env_arg):
     arg = {}
     arg['Nagent'] = global_arg['Nagent']
-    arg['power_thld'] = 0.7  # default7.4 0.7
+    arg['power_thld'] = 0.7  # default7.4 0.7  表示可以被强化角色定义的最小影响力分数
     arg['relat_thld'] = 0.7  # default7.4 0.7
     arg['relat_init'] = 0.5  # default7.4 0.5
     arg['relat_turb'] = 0.15  # default7.4 0.15

@@ -53,7 +53,10 @@ def sgl_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
     darea = agent.get_max_area().info['max'] - env.getValue(agent.state_now)
     prob = {"hqxx_xxjl": agent.frame_arg['ACT']['odds']['hqxx'](darea, dplan),
             "jhjc_tljc": agent.frame_arg['ACT']['odds']['jhjc'](darea, dplan),
-            "xdzx_xtfg": agent.frame_arg['ACT']['odds']['xdzx'](darea, dplan)
+            "xdzx_xtfg": agent.frame_arg['ACT']['odds']['xdzx'](darea, dplan),
+            "whlj": agent.frame_arg['ACT']['odds']['whlj'](darea, dplan),  # 新增空的集体行动机制
+            "dyjs": agent.frame_arg['ACT']['odds']['dyjs'](darea, dplan),
+            "tjzt": agent.frame_arg['ACT']['odds']['tjzt'](darea, dplan)
             }
     if env.getValue(agent.state_now) == 1:
         prob['xdzx_xtfg'] = 0  # 如果已经到达1，不再行动
@@ -78,8 +81,12 @@ def sgl_agent_act(env, soc_net, agent, record, Ti, Tfi, agent_no, meet_req):
         last_agent = deepcopy(agent)
         agent.meeting_now = ''  # 不参加会议
         (soc_net, agent) = acts.act_xdzx(env, soc_net, agent_no, agent, record, Ti, Tfi)
-
         return agent, soc_net, meet_info
+    else:
+        last_agent = deepcopy(agent)
+        agent.meeting_now = ''  # 不参加会议
+        return agent, soc_net, meet_info
+
 
 
 # 多人版的行动逻辑
