@@ -11,7 +11,7 @@ from util.config import all_config
 from util import moniter
 from record import Record
 from random import randint
-
+import metrics
 
 class MulControl:
     def __init__(self):
@@ -68,6 +68,8 @@ class MulControl:
             self.socl_net.power_load(all_config['checkpoint']['socl_network']['power'])
             self.socl_net.relat_load(all_config['checkpoint']['socl_network']['relat'])
         self.record = Record()
+
+        self.metric = metrics.register_all_metrics(metrics.Metrics())
 
     def run_meet_frame(self, Ti, Tfi, meet_name, member, host, up_info):
         # 根据m_name开会
@@ -167,6 +169,9 @@ class MulControl:
         return new_meet_req
 
     def run_stage(self, Ti, meet_req, up_info):
+        self.metric.calc_metric(['stage'], Ti,
+                                agents=self.agents,
+                                env=self.main_env)
         # 将Agent上一个stage的最终状态拷贝过来
         for i in range(len(self.agents)):
             last_arg = deepcopy(self.agents[i].stage_arg)
@@ -246,7 +251,6 @@ class MulControl:
 
     def run_exp(self):
         up_info = {}
-
         # 单个agent的结果表
         for k in range(self.global_arg["Nagent"]):
             csv_head = ['frame', 'state', 'value', 'area_v', 'area_center', 'act', 'goal', 'goal_value']
@@ -287,6 +291,9 @@ class MulControl:
             # logging.debug("max_value:{max}".format(**up_info['nkinfo']))
             # 运行一个Stage，Ti表示每个Stage的第一帧
             meet_req = self.run_stage(Ti, meet_req, up_info)
+
+        import json
+        print(json.dumps(self.metric.get_data(), indent=2))
 
 
 if __name__ == '__main__':
