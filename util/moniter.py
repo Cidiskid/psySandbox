@@ -1,10 +1,12 @@
 # -*- coding:utf-8 -*-
 import sys
 
-reload(sys)
-sys.setdefaultencoding('utf8')
-
-from config import all_config
+if sys.version_info < (3, 0):
+    reload(sys)
+    sys.setdefaultencoding('utf8')
+    from config import all_config
+else:
+    from util.config import all_config
 import logging
 import time
 import csv
@@ -145,7 +147,7 @@ def AppendToCsv(list, filename):
     except:
         data = []
     data.append(list)
-    with open(filename, "w") as fp:
+    with open(filename, "w") as fp: # TODO: 修改为wa模式
         csv_w = csv.writer(fp)
         for r in data:
             csv_w.writerow(r)

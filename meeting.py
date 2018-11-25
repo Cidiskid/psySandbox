@@ -47,6 +47,7 @@ def meeting_xxjl(env, agents, member, host, socl_net, record, T, Tfi):  # 信息
     assert isinstance(env, Env) and isinstance(socl_net, SoclNet)
     assert isinstance(host, set) and isinstance(member, set)
     assert host.issubset(member)
+
     ret_info = []
     logging.debug("memeber:%s,host:%s" % (member, host))
     for x in member:

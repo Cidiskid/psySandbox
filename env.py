@@ -19,7 +19,7 @@ class State:
             assert len(data) == State.N
             assert max(data) < State.P and min(data) >= 0
             self.data = deepcopy(data)
-        elif (type(data) == int):
+        elif type(data) == int:
             assert 0 <= data < State.P ** State.N
             self.data = State.int2list(data)
         else:
@@ -40,6 +40,13 @@ class State:
     def __setitem__(self, key, value):
         assert 0 <= key < self.N and 0 <= value < self.P
         self.data[key] = value
+
+    def __eq__(self, other):
+        assert isinstance(other, State)
+        for i in range(State.N):
+            if self.data[i] != other.data[i]:
+                return False
+        return True
 
     def walk(self, key, d):
         assert 0 <= key < self.N
@@ -177,6 +184,16 @@ class Area:
                 retry_num -= 1
         return try_queue
 
+    def __eq__(self, other):
+        assert isinstance(other, Area)
+        if self.dist != other.dist:
+            return False
+        if self.center != other.center:
+            return False
+        for i in range(State.N):
+            if self.mask[i] != other.mask[i]:
+                return False
+        return True
 
 class NKmodel:
     def __init__(self, n, k, p=2):
@@ -293,13 +310,13 @@ class Env:
     def getModelDistri(self):
         all_value = self.getAllValue()
         # 为减少遍历数量，强行在这调用，仅测试时调用！！
-        #moniter.DrawHist(all_value, all_config['total_hist'])  # 需要输出hist时调用
+        # moniter.DrawHist(all_value, all_config['total_hist'])  # 需要输出hist时调用
         return Env._getDistri(all_value)
 
     def getModelPeakDistri(self):
         all_peak_value = self.getAllPeakValue()
         # 为减少遍历数量，强行在这调用，仅在测试时调用，并保证该函数只在mul_control中调用一次
-        #moniter.DrawHist(all_peak_value, all_config['peak_hist'])  # 需要输出hist时调用
+        # moniter.DrawHist(all_peak_value, all_config['peak_hist'])  # 需要输出hist时调用
         return Env._getDistri(all_peak_value)
 
     def nkmodel_save(self, filepath):

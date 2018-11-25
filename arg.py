@@ -11,7 +11,7 @@ from env import Area
 
 def init_global_arg():
     arg = {
-        'T': 256,  # default7.4 256 模拟总时间
+        'T': 64,  # default7.4 256 模拟总时间
         "Ts": 8,  # default7.4 8 每个stage的帧数
         "Nagent": 16,  # default7.4 10 Agent数量
         'D_env': True,  # 动态地形开关
