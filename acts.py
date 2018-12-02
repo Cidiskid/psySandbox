@@ -275,7 +275,7 @@ def act_jhnd(env, socl_net, agent_no, agent, record, T, Tfi):  # 计划拟定
     new_plan = _act_jhnd_get_plan(env, agent, max_area)
     new_plan.info['owner'] = agent_no
     new_plan.info['T_gen'] = T + Tfi
-    agent.frame_arg['PSM']['m-plan'].append(new_plan)
+    agent.renew_m_plan(new_plan, Tfi)
     socl_net, agent = act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan)
     return socl_net, agent
 

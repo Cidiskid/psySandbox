@@ -195,6 +195,19 @@ class Area:
                 return False
         return True
 
+    def __gt__(self, other):
+        assert isinstance(other, Area)
+        if self.dist != other.dist:
+            return self.dist > other.dist
+        i_center = (int(self.center), int(other.center))
+        if i_center[0] != i_center[1]:
+            return i_center[0] > i_center[1]
+        for i in range(State.N):
+            if self.mask[i] != other.mask[i]:
+                return self.mask[i] > other.mask[i]
+        return False
+
+
 class NKmodel:
     def __init__(self, n, k, p=2):
         assert (type(n) == int and type(k) == int and type(p) == int)

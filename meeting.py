@@ -87,6 +87,8 @@ def meeting_tljc(env, agents, member, host, socl_net, record, T, Tfi):  # 讨论
         new_plans.append(acts._act_jhnd_get_plan(env, agents[x], max_area))
         new_plans[-1].info['owner'] = x
         new_plans[-1].info['T_gen'] = T + Tfi
+    for x in member:
+        agents[x].renew_m_plan_list(new_plans, T+Tfi)
     fin_plan = max(new_plans, key=lambda plan: plan.goal_value)  # 仅根据goal_value排序，不考虑距离
 
     for x in member:

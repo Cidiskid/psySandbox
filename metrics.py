@@ -78,63 +78,100 @@ class Metrics:
             pickle.dump(self.data, fp)
 
 
-def agent_minfo(agents,env, **kargs):
+def agent_each_minfo(agents, env, **kargs):
     assert isinstance(agents, list)
     assert isinstance(env, Env)
-    ret_result = {'each': [], 'common': {}}
+    ret_result = {'each': [], 'avg': {}}
+
+    def _all_area(agent):
+        return len([minfo for minfo in agent.frame_arg["PSM"]['m-info'] if minfo.dist > 0])
+
+    def _unique_area(agent, dist_thr):
+        uniq_list = []
+        for area in agent.frame_arg["PSM"]['m-info']:
+            if area.dist >= dist_thr:
+                flag = True
+                for uq_item in uniq_list:
+                    if uq_item == area:
+                        flag = False
+                        break
+                if flag:
+                    uniq_list.append(area)
+        return len(uniq_list)
+
+    def _useful_m_info(agent, dist_thr):
+        useful_num = 0
+        for area in agent.frame_arg['PSM']['m-info']:
+            if area.dist < dist_thr:
+                continue
+            if area.info['max'] > env.getValue(agent.state_now):
+                useful_num += 1
+        return useful_num
+
     for agent in agents:
         assert isinstance(agent, Agent)
-
-        def _all_area():
-            return len([minfo for minfo in agent.frame_arg["PSM"]['m-info'] if minfo.dist > 0])
-
-        def _unique_area(dist_thr):
-            uniq_list = []
-            for area in agent.frame_arg["PSM"]['m-info']:
-                if area.dist >= dist_thr:
-                    flag = True
-                    for uq_item in uniq_list:
-                        if uq_item == area:
-                            flag = False
-                            break
-                    if flag:
-                        uniq_list.append(area)
-            return len(uniq_list)
-
-        def _common_area(dist_thr):
-            pass
-        #TODO 通过排序来做，需要添加__gt__
-
-        def _useful_m_info(dist_thr):
-            useful_num = 0
-            for area in agent.frame_arg['PSM']['m-info']:
-                if area.dist < dist_thr:
-                    continue
-                if area.info['max'] > env.getValue(agent.state_now):
-                    useful_num += 1
-            return  useful_num
-
         metric = {
-            "all_area": _all_area(),
-            "unique_area": _unique_area(dist_thr=1),
-            'unique_m_info': _unique_area(dist_thr=0),
-            'useful_m_info': _useful_m_info(dist_thr=0)
+            "all_area": _all_area(agent),
+            "unique_area": _unique_area(agent, dist_thr=1),
+            'unique_m_info': _unique_area(agent, dist_thr=0),
+            'useful_m_info': _useful_m_info(agent, dist_thr=0)
         }
         ret_result['each'].append(metric)
 
     def sum_and_avg(key):
         res_sum = sum([m[key] for m in ret_result['each']])
-        return {'sum': res_sum, "avg": res_sum/len(agents)}
+        return {'sum': res_sum, "avg": res_sum / len(agents)}
 
     for key in ['all_area', 'unique_area', 'unique_m_info', 'useful_m_info']:
-        ret_result['common'][key] = sum_and_avg(key)
+        ret_result['avg'][key] = sum_and_avg(key)
 
     return ret_result
 
 
+def agent_common_minfo(agents, env, **kargs):
+    assert isinstance(agents, list)
+    assert isinstance(env, Env)
+
+    def _common_area(dist_thr):
+        m_area_list = []
+        for agent in agents:
+            assert isinstance(agent, Agent)
+            t_area = []
+            for area in agent.frame_arg['PSM']['m-info']:
+                if area.dist >= dist_thr:
+                    t_area.append(area)
+            t_area = sorted(t_area)
+            for i in range(len(t_area) - 1, 0, -1):
+                if t_area[i] == t_area[i - 1]:
+                    del t_area[i]
+            m_area_list += t_area
+        m_area_list = sorted(m_area_list)
+        same_cnt = 0
+        same_cnt_list = []
+        for i in range(len(m_area_list)):
+            if i == 0 or m_area_list[i] == m_area_list[i - 1]:
+                same_cnt += 1
+            else:
+                same_cnt_list.append(same_cnt)
+                same_cnt = 1
+        same_cnt_list.append(same_cnt)
+        same_hist = [0] * (max(same_cnt_list) + 1)
+        for x in same_cnt_list:
+            same_hist[x] += 1
+        return same_hist
+
+    ret_result = {
+        "common_area": _common_area(1),
+        "common_m_info": _common_area(0),
+    }
+    return ret_result
+
+#def agent_mplan
+
 def register_all_metrics(the_metrics):
     assert isinstance(the_metrics, Metrics)
-    the_metrics.add_metric(func=agent_minfo, path="agent.m-info", tags=['all', 'agent', 'stage'])
+    the_metrics.add_metric(func=agent_each_minfo, path="agent.m-info.each", tags=['all', 'agent', 'stage'])
+    the_metrics.add_metric(func=agent_common_minfo, path="agent.m-info.common", tags=['all', 'agent', 'stage'])
     return the_metrics
 
 

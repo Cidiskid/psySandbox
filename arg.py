@@ -142,7 +142,8 @@ def init_agent_arg(global_arg, env_arg):
         #"enable": clip_rsmp(-0.999, 0.999, Norm, mu=0.3, sigma=0.35),  # 高enable模式
         # "enable": clip_rsmp(-0.999, 0.999, uniform, a=-0.8, b=-0.2),  # 对事不对人（不管团队无enable）模式
         # "se": clip_rsmp(0.001, 0.999, Norm, mu=arg['a']["insight"], sigma=0.1)
-        "rmb": 64
+        "m-info-rmb": 64,
+        "m-plan-rmb": 64,
     }
 
     # 适应分数观察值的偏差

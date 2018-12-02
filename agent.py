@@ -82,7 +82,7 @@ class Agent:
         self.frame_arg["PSM"]['m-info'] += area_list
         # 清空旧的信息
         for i in range(len(self.frame_arg["PSM"]['m-info']) - 1, -1, -1):
-            if self.frame_arg["PSM"]['m-info'][i].info['T_stmp'] < tfi - self.agent_arg['a']['rmb']:
+            if self.frame_arg["PSM"]['m-info'][i].info['T_stmp'] < tfi - self.agent_arg['a']['m-info-rmb']:
                 del self.frame_arg["PSM"]['m-info'][i]
 
     def renew_m_info(self, area, tfi):
@@ -100,3 +100,12 @@ class Agent:
             if max_area.info['max'] <= area.info['max']:
                 max_area = area
         return max_area
+
+    def renew_m_plan_list(self, plan_list, tfi):
+        self.frame_arg['PSM']["m-plan"] += plan_list
+        for i in range(len(self.frame_arg['PSN']['m-plan']) - 1, -1, -1):
+            if self.frame_arg['PSM']['m-info'][i].info['T_gen'] < tfi - self.agent_arg['a']['m-plan-rmb']:
+                del self.frame_arg['PSM']['m=plan'][i]
+
+    def renew_m_plan(self, plan, tfi):
+        self.renew_m_info_list([plan], tfi)
