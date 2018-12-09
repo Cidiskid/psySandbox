@@ -6,8 +6,14 @@
   },
   "checkpoint": {
     "env": {
-      "enable": false,
-      "path": ""
+      "st": {
+        "enable": false,
+        "path": ""
+      },
+      "ed": {
+        "enable": false,
+        "path": ""
+      }
     },
     "socl_network": {
       "enable": false,

@@ -166,12 +166,108 @@ def agent_common_minfo(agents, env, **kargs):
     }
     return ret_result
 
-#def agent_mplan
+def agent_each_mplan(agents, env, **kargs):
+    assert isinstance(agents, list)
+    assert isinstance(env, Env)
+    ret_result = {'each': [], 'avg': {}}
+
+    def _all_plan(agent):
+        return len(agent.frame_arg["PSM"]['m-plan'])
+
+    def _unique_plan(agent):
+        uniq_list = deepcopy(agent.frame_arg["PSM"]['m-plan'])
+        uniq_list = sorted(uniq_list)
+        for i in range(len(uniq_list) - 1, 0, -1):
+            if uniq_list[i] == uniq_list[i - 1]:
+                del uniq_list[i]
+        return len(uniq_list)
+
+    for agent in agents:
+        assert isinstance(agent, Agent)
+        metric = {
+            "all_plan": _all_plan(agent),
+            "unique_plan": _unique_plan(agent),
+        }
+        ret_result['each'].append(metric)
+
+    def sum_and_avg(key):
+        res_sum = sum([m[key] for m in ret_result['each']])
+        return {'sum': res_sum, "avg": res_sum / len(agents)}
+
+    for key in ['all_plan', 'unique_plan']:
+        ret_result['avg'][key] = sum_and_avg(key)
+
+    return ret_result
+
+def agent_common_mplan(agents, env, **kwargs):
+    assert isinstance(agents, list)
+    assert isinstance(env, Env)
+
+    def _common_mplan():
+        m_mplan_list = []
+        for agent in agents:
+            assert isinstance(agent, Agent)
+            t_plan = deepcopy(agent.frame_arg['PSM']['m-plan'])
+            t_plan = sorted(t_plan)
+            for i in range(len(t_plan) - 1, 0, -1):
+                if t_plan[i] == t_plan[i - 1]:
+                    del t_plan[i]
+            m_mplan_list += t_plan
+        m_mplan_list = sorted(m_mplan_list)
+        same_cnt = 0
+        same_cnt_list = []
+        for i in range(len(m_mplan_list)):
+            if i == 0 or m_mplan_list[i] == m_mplan_list[i - 1]:
+                same_cnt += 1
+            else:
+                same_cnt_list.append(same_cnt)
+                same_cnt = 1
+        same_cnt_list.append(same_cnt)
+        same_hist = [0] * (max(same_cnt_list) + 1)
+        for x in same_cnt_list:
+            same_hist[x] += 1
+        return same_hist
+
+    def _working_plan():
+        ret_result = {}
+        a_plan_list = sorted([agent.a_plan for agent in agents if agent.a_plan is not None])
+        ret_result['num'] = len(a_plan_list)
+        same_cnt = 0
+        same_cnt_p = []
+        for i in range(len(a_plan_list)):
+            if i == 0 or a_plan_list[i] == a_plan_list[i -1]:
+                same_cnt += 1
+            else:
+                if same_cnt > 1:
+                    same_cnt_p.append(same_cnt * 1.0 / len(a_plan_list))
+                same_cnt = 1
+        if same_cnt > 1:
+            same_cnt_p.append(same_cnt * 1.0 / len(a_plan_list))
+        ret_result['ratio'] = same_cnt_p
+        return ret_result
+
+    ret_result = {
+        "common_plan": _common_mplan(),
+        "working_plan": _working_plan()
+    }
+    return ret_result
+
+#def act_leadership
+
+def agent_network(agents, socl_net, **kwargs):
+    assert isinstance(socl_net, SoclNet)
+    return {
+        'relate_Cc': socl_net.get_power_out_close_centrality(),
+        'power_Cod': socl_net.get_relat_close_centrality()
+    }
 
 def register_all_metrics(the_metrics):
     assert isinstance(the_metrics, Metrics)
-    the_metrics.add_metric(func=agent_each_minfo, path="agent.m-info.each", tags=['all', 'agent', 'stage'])
-    the_metrics.add_metric(func=agent_common_minfo, path="agent.m-info.common", tags=['all', 'agent', 'stage'])
+    the_metrics.add_metric(func=agent_each_minfo, path="agent.m-info.each", tags=['all', 'agent', 'frame'])
+    the_metrics.add_metric(func=agent_common_minfo, path="agent.m-info.common", tags=['all', 'agent', 'frame'])
+    the_metrics.add_metric(func=agent_each_mplan, path="agent.m-plan.each", tags=['all', 'agent', 'frame'])
+    the_metrics.add_metric(func=agent_common_mplan, path="agent.m-plan.common", tags=['all', 'agent', 'frame'])
+    the_metrics.add_metric(func=agent_network, path="agent.network", tags=['all', 'agent', 'network', 'stage'])
     return the_metrics
 
 

@@ -332,25 +332,23 @@ class Env:
         # moniter.DrawHist(all_peak_value, all_config['peak_hist'])  # 需要输出hist时调用
         return Env._getDistri(all_peak_value)
 
-    def nkmodel_save(self, filepath):
+    def nkmodel_save(self, filepath, model_type):
         save_data = {
             "N": self.N,
             "K": self.K,
             "P": self.P,
-            "T": self.T,
-            "model": self.models
+            "model": self.models[model_type]
         }
         with open(filepath, "wb") as fp:
             pickle.dump(save_data, fp)
 
-    def nkmodel_load(self, filepath):
+    def nkmodel_load(self, filepath, model_type):
         with open(filepath, "rb") as fp:
             data = pickle.load(fp)
-        self.N = data['N']
-        self.K = data['K']
-        self.P = data['P']
-        self.T = data['T']
-        self.models = data['model']
+        assert isinstance(self.N == data['N'])
+        assert isinstance(self.K == data['K'])
+        assert isinstance(self.P == data['P'])
+        self.models[model_type] = data['model']
 
 
 def get_area_sample_value(env, area, sample_num, state=None, dfs_r=0.5):

@@ -48,6 +48,14 @@ class Plan:
             return State.getDist(state, self.area.center) \
                    + State.getDist(self.area.center, self.goal)
 
+    def __eq__(self, other):
+        assert isinstance(other, Plan)
+        return self.area == other.area
+
+    def __gt__(self, other):
+        assert isinstance(other, Plan)
+        return self.area > other.area
+
 
 class Agent:
     def __init__(self, arg, env):
@@ -103,9 +111,9 @@ class Agent:
 
     def renew_m_plan_list(self, plan_list, tfi):
         self.frame_arg['PSM']["m-plan"] += plan_list
-        for i in range(len(self.frame_arg['PSN']['m-plan']) - 1, -1, -1):
-            if self.frame_arg['PSM']['m-info'][i].info['T_gen'] < tfi - self.agent_arg['a']['m-plan-rmb']:
-                del self.frame_arg['PSM']['m=plan'][i]
+        for i in range(len(self.frame_arg['PSM']['m-plan']) - 1, -1, -1):
+            if self.frame_arg['PSM']['m-plan'][i].info['T_gen'] < tfi - self.agent_arg['a']['m-plan-rmb']:
+                del self.frame_arg['PSM']['m-plan'][i]
 
     def renew_m_plan(self, plan, tfi):
-        self.renew_m_info_list([plan], tfi)
+        self.renew_m_plan_list([plan], tfi)

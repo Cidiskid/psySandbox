@@ -10,7 +10,7 @@ else:
 import logging
 import time
 import csv
-
+import json
 
 def LogInit():
     all_config.load()
@@ -138,6 +138,9 @@ def Draw2DViaPCA(features, value):
     #    Draw3dPairs(pairs)
     Draw2dScatterWithValue(pairs)
 
+def DumpToJson(data, filename):
+    with open(filename, 'w') as fp:
+        json.dump(data, fp, indent=2)
 
 def AppendToCsv(list, filename):
     try:
