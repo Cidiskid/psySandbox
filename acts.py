@@ -10,6 +10,9 @@ from util.util import max_choice, norm_softmax, norm_softmaxamp10, random_choice
 from agent import Agent, Plan
 from record import Record
 import arg
+from leadership_bill import Sign
+import leadership_bill
+from leadership_bill import LeaderRecord, Sign
 
 
 # 已经无效
@@ -52,6 +55,7 @@ def act_zyzx(env, socl_net, agent_no, agent, record, T, Tfi):
         new_area = Area(agent.state_now, [False] * env.N, 0)
         new_area.info = get_area_sample_distr(env=env, area=new_area, state=agent.state_now,
                                               T_stmp=T + Tfi, sample_num=1, dfs_r=1)
+        new_area.sign = Sign(agent_no, T + Tfi, "act_zyzx")
         # NOTE cid 删除OB扰动，实际到达的点应该给一个客观值
         # for k in new_area.info:
         #   new_area.info[k] = agent.agent_arg['ob'](new_area.info[k])
@@ -74,13 +78,14 @@ def act_jhzx(env, socl_net, agent_no, agent, record, T, Tfi):  # 计划执行
     # NOTE cid 删除OB扰动，实际到达的点应该给一个客观值
     # for k in new_area.info:
     #    new_area.info[k] = agent.agent_arg['ob'](new_area.info[k])
+    new_area.sign = Sign(agent_no, T + Tfi, "act_jhzx")
     agent.renew_m_info(new_area, T + Tfi)
     # 添加当前行动记录
     agent.policy_now = 'jhzx'
     # 计划执行完毕后，清空计划
     if agent.a_plan.is_arrive(agent.state_now):
         #  NOTE cid 添加了清空计划前对计划的评价
-        if not agent.a_plan is None:
+        if agent.a_plan is not None:
             dF = env.getValue(agent.state_now) \
                  - record.get_agent_record(agent_no, agent.a_plan.info['T_acpt'])["value"]
             # if "commit" in agent.a_plan.info and agent.a_plan.info['commit']:  # 意味着来自tljc的plan就不更新了？
@@ -160,6 +165,7 @@ def act_hqxx(env, socl_net, agent_no, agent, record, T, Tfi):  # 获取信息
         new_area.info[k] = agent.agent_arg['ob'](new_area.info[k])
 
     # 把信息更新到状态中
+    new_area.sign = Sign(agent_no, T + Tfi, 'act_hqxx')
     agent.renew_m_info(new_area, T + Tfi)
     logging.debug(len(agent.frame_arg['PSM']['m-info']))
     agent.policy_now = 'hqxx'  # 添加当前行动记录
@@ -173,7 +179,7 @@ def act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
     new_plan_value = env.arg['ACT']['jhjc']["plan_eval"](new_plan.len_to_finish(agent.state_now),
                                                          new_plan.goal_value)
     org_plan_value = env.getValue(agent.state_now)  # 如果没有a_plan，至少以当前位置作为plan value
-    if not agent.a_plan is None:
+    if agent.a_plan is not None:
         org_plan_value = env.arg['ACT']['jhjc']["plan_eval"](agent.a_plan.len_to_finish(agent.state_now),
                                                              agent.a_plan.goal_value)
 
@@ -181,10 +187,10 @@ def act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
     # logging.debug("new_v: %.5s, org_v:%.5s" % (new_plan_value, org_plan_value))
     if new_plan_value >= org_plan_value:
         # P0-07 在覆盖新计划前对旧计划的执行情况进行判断并据此更新SoclNet.power
-        if not agent.a_plan is None:
+        if agent.a_plan is not None:
             dF = env.getValue(agent.state_now) \
                  - record.get_agent_record(agent_no, agent.a_plan.info['T_acpt'])["value"]
-            #if "commit" in agent.a_plan.info and agent.a_plan.info['commit']:
+            # if "commit" in agent.a_plan.info and agent.a_plan.info['commit']:
             dp_f_a = new_plan.info['owner']
             dP_r = agent.agent_arg['dP_r']['other']
             # 仅对他人的power进行更新
@@ -204,11 +210,20 @@ def act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan):
             # socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
         new_plan.info['T_acpt'] = T + Tfi
         agent.a_plan = new_plan
+
+        assert new_plan.area.sign is not None
+
+        leadership_bill.leader_bill.add_record(record_type="m-plan",
+                                               gen=new_plan.sign, user=Sign(agent_no, T + Tfi, 'act_jhjc'))
+        leadership_bill.leader_bill.add_record(record_type="m-info",
+                                               gen=new_plan.area.sign, user=Sign(agent_no, T + Tfi, 'act_jhjc'))
         logging.debug("plan_dist: %s" % agent.a_plan.len_to_finish(agent.state_now))
         agent.policy_now = 'jhjc_new'  # 添加当前行动记录,选择新计划
-
+        use_plan = True
+    else:
+        use_plan = False
     logging.debug(agent.policy_now)
-    return socl_net, agent
+    return socl_net, agent, use_plan
 
 
 def act_commit(env, socl_net, agent_no, agent, record, T, Tfi, new_plan, member):
@@ -227,7 +242,7 @@ def act_commit(env, socl_net, agent_no, agent, record, T, Tfi, new_plan, member)
         if not agent.a_plan is None:
             dF = env.getValue(agent.state_now) \
                  - record.get_agent_record(agent_no, agent.a_plan.info['T_acpt'])["value"]
-            #if "commit" in agent.a_plan.info and agent.a_plan.info['commit']:
+            # if "commit" in agent.a_plan.info and agent.a_plan.info['commit']:
             dp_f_a = new_plan.info['owner']
             dP_r = agent.agent_arg['dP_r']['other']
             # 仅对他人的power进行更新
@@ -245,14 +260,21 @@ def act_commit(env, socl_net, agent_no, agent, record, T, Tfi, new_plan, member)
             # dP = agent.agent_arg["dPower"](dF, dP_r)
             # d_pwr_updt_g = agent.agent_arg["d_pwr_updt_g"](socl_net.power[dp_f_a][agent_no]['weight'], dP)
             # socl_net.power_delta(dp_f_a, agent_no, d_pwr_updt_g)
+        leadership_bill.leader_bill.add_record(record_type="m-plan",
+                                               gen=new_plan.sign, user=Sign(agent_no, T + Tfi, 'act_commit'))
+        assert new_plan.area.sign is not None
+        leadership_bill.leader_bill.add_record(record_type="m-info",
+                                               gen=new_plan.area.sign, user=Sign(agent_no, T + Tfi, 'act_commit'))
         agent.a_plan = deepcopy(new_plan)
         agent.a_plan.info['T_acpt'] = T + Tfi
         agent.a_plan.info['commit'] = True
         agent.a_plan.info['member'] = member
         agent.policy_now = 'commit_t'  # 添加当前行动记录
-
+        commited = True
+    else:
+        commited = False
     logging.debug(agent.policy_now)
-    return socl_net, agent
+    return socl_net, agent, commited
 
 
 def _act_jhnd_get_plan(env, agent, aim_area):
@@ -273,10 +295,11 @@ def act_jhnd(env, socl_net, agent_no, agent, record, T, Tfi):  # 计划拟定
     assert isinstance(env, Env) and isinstance(agent, Agent)
     max_area = agent.get_max_area()  # TODO WARNING 有可能get一个到达过的局部最优点，不停生成回到这个点的计划
     new_plan = _act_jhnd_get_plan(env, agent, max_area)
+    new_plan.sign = Sign(agent_no, T + Tfi, 'act_jhnd')
     new_plan.info['owner'] = agent_no
     new_plan.info['T_gen'] = T + Tfi
     agent.renew_m_plan(new_plan, Tfi)
-    socl_net, agent = act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan)
+    socl_net, agent, use_plan = act_jhjc(env, socl_net, agent_no, agent, record, T, Tfi, new_plan)
     return socl_net, agent
 
 
@@ -289,9 +312,11 @@ def act_whlj(env, socl_net, agent_no, agent, record, T, Tfi):
     for aim in to_whlj:
         delta = env.arg['ACT']['whlj']['delta_relate'](socl_net.relat[aim][agent_no]['weight'])
         socl_net.relat_delta(aim, agent_no, delta)
+        leadership_bill.leader_bill.add_record(record_type='talking', meeting="whlj", talking_type="whlj",
+                                               speaker=Sign(agent_no, T + Tfi, 'act_whlj'),
+                                               listener=Sign(aim, T + Tfi, 'act_whlj'))
 
     agent.policy_now = 'whlj'  # 添加当前行动记录
-
     logging.debug(agent.policy_now)
     return socl_net, agent
 
@@ -313,6 +338,9 @@ def act_dyjs(env, socl_net, agent_no, agent, record, T, Tfi):
             if aim != to_power:
                 delta = env.arg['ACT']['dyjs']['delta_power'](socl_net.power[to_power][aim]['weight'])
                 socl_net.power_delta(to_power, aim, delta)
+                leadership_bill.leader_bill.add_record(record_type='talking', meeting="dyjs", talking_type="dyjs",
+                                                       speaker=Sign(agent_no, T + Tfi, 'act_dyjs'),
+                                                       listener=Sign(aim, T + Tfi, 'act_dyjs'))
         agent.policy_now = 'dyjs'  # 添加当前行动记录
 
     logging.debug(agent.policy_now)

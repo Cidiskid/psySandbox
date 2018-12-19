@@ -14,6 +14,7 @@ class Plan:
         self.goal_value = goal_value
         self.area = area
         self.info = {}
+        self.sign = None
 
     def is_arrive(self, state):
         assert isinstance(state, State)
@@ -60,6 +61,7 @@ class Plan:
 class Agent:
     def __init__(self, arg, env):
         assert isinstance(env, Env)
+        self.agent_id = None
         self.agent_arg = arg
         self.stage_arg = arg['default']['stage']
         self.frame_arg = arg['default']['frame']

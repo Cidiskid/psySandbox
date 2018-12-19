@@ -114,6 +114,7 @@ class Area:
         self.center = center
         self.mask = mask
         self.dist = dist
+        self.sign = None
         self.info = {}
 
     def get_dist(self, state):
@@ -143,7 +144,7 @@ class Area:
         logging.info(
             "Area:(c:%s, mask:%s, d:%d):num %d" % (str(self.center), str(self.mask), self.dist, len(bfs_queue)))
         return [pair[0] for pair in bfs_queue]
-
+#TODO:  jiaru sign point
     def state_in(self, state):
         assert isinstance(state, State) and state.N == self.center.N
         diff = State.getDiffFrom(state, self.center)

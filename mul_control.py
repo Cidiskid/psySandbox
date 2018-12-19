@@ -10,8 +10,10 @@ import meeting
 from util.config import all_config
 from util import moniter
 from record import Record
+from leadership_bill import LeaderBill, LeaderRecord, Sign
 from random import randint
 import metrics
+import leadership_bill
 
 class MulControl:
     def __init__(self):
@@ -36,11 +38,13 @@ class MulControl:
                                                         self.main_env.arg),
                                      self.main_env))
             self.agents[i].state_now = deepcopy(state_start)
+            self.agents[i].agent_id = i
 
             # 去除了一开始给一个全局area，改为添加一个包含起点的点area
             start_area = Area(self.agents[i].state_now, [False] * self.main_env.N, 0)
             start_area.info = get_area_sample_distr(env=self.main_env, area=start_area, state=self.agents[i].state_now,
                                                     T_stmp=0, sample_num=1, dfs_r=1)
+            start_area.sign = Sign(i, 0, 'start')
             self.agents[i].renew_m_info(start_area, 0)
             self.a_plan = None
             logging.info("state:%s, st_value:%s,insight:%.5s ,xplr:%.5s, xplt:%.5s, enable:%.5s" % (
@@ -300,7 +304,6 @@ class MulControl:
         moniter.DumpToJson(self.metric.get_data(), all_config['metrics_json_path'])
 
 
-
 if __name__ == '__main__':
     import time
     import os
@@ -393,5 +396,6 @@ if __name__ == '__main__':
         logging.info("run exp %3d" % exp_num)
         main_control = MulControl()
         main_control.run_exp()  # 开始运行实验
+        moniter.DumpToJson(leadership_bill.leader_bill.to_json(), "hiehie.json")
 
     moniter.AppendToCsv(exp_list, all_config['exp_list_path'])
