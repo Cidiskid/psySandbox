@@ -9,14 +9,16 @@ import acts
 import leadership_bill
 from leadership_bill import Sign
 
+
 def _meeting_req_add_bill_record(host, member, meeting_name, ti):
     for x in host:
         for y in member:
-            if y not  in host:
+            if y not in host:
                 leadership_bill.leader_bill.add_record(record_type='talking',
                                                        meeting=meeting_name, talking_type="meet_req",
-                                                       speaker=Sign(x, ti-1, "req"),
-                                                       listener=Sign(x, ti, "req"))
+                                                       speaker=Sign(x, ti - 1, "req"),
+                                                       listener=Sign(y, ti, "req"))
+
 
 def meeting_xtfg(env, agents, member, host, socl_net, record, T, Tfi):  # 协调分工
     assert isinstance(env, Env) and isinstance(socl_net, SoclNet)
@@ -90,7 +92,8 @@ def meeting_xxjl(env, agents, member, host, socl_net, record, T, Tfi):  # 信息
             agents[x].renew_m_info_list(infos, T + Tfi)
             max_info_max = max([_info.info['max'] for _info in infos])
             if max_info_max > env.getValue(agents[x].state_now):
-                leadership_bill.leader_bill.add_record(record_type='talking', meeting='xxjl', talking_type='get_useful_info',
+                leadership_bill.leader_bill.add_record(record_type='talking', meeting='xxjl',
+                                                       talking_type='get_useful_info',
                                                        speaker=Sign(y, T + Tfi, 'xxjl'),
                                                        listener=Sign(x, T + Tfi, 'xxjl'))
 

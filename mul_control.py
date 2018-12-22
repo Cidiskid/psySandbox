@@ -302,6 +302,7 @@ class MulControl:
             # 运行一个Stage，Ti表示每个Stage的第一帧
             meet_req = self.run_stage(Ti, meet_req, up_info)
         moniter.DumpToJson(self.metric.get_data(), all_config['metrics_json_path'])
+        moniter.DumpToJson(leadership_bill.leader_bill.to_json(), all_config['leadership_bill_json_path'])
 
 
 if __name__ == '__main__':
@@ -392,10 +393,11 @@ if __name__ == '__main__':
                                                 "%s_total_hist.png" % (exp_id))
         all_config['metrics_json_path'] = os.path.join("result", all_config['batch_id'], exp_id,
                                                        "%s_metrics.json" % exp_id)
+        all_config['leadership_bill_json_path'] = os.path.join("result", all_config['batch_id'], exp_id,
+                                                               "%s_leadership_bill.json" % exp_id)
 
         logging.info("run exp %3d" % exp_num)
         main_control = MulControl()
         main_control.run_exp()  # 开始运行实验
-        moniter.DumpToJson(leadership_bill.leader_bill.to_json(), "hiehie.json")
 
     moniter.AppendToCsv(exp_list, all_config['exp_list_path'])
