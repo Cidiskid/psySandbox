@@ -14,6 +14,7 @@ class Plan:
         self.goal_value = goal_value
         self.area = area
         self.info = {}
+        self.sign = None
 
     def is_arrive(self, state):
         assert isinstance(state, State)
@@ -48,10 +49,19 @@ class Plan:
             return State.getDist(state, self.area.center) \
                    + State.getDist(self.area.center, self.goal)
 
+    def __eq__(self, other):
+        assert isinstance(other, Plan)
+        return self.area == other.area
+
+    def __gt__(self, other):
+        assert isinstance(other, Plan)
+        return self.area > other.area
+
 
 class Agent:
     def __init__(self, arg, env):
         assert isinstance(env, Env)
+        self.agent_id = None
         self.agent_arg = arg
         self.stage_arg = arg['default']['stage']
         self.frame_arg = arg['default']['frame']
@@ -82,7 +92,7 @@ class Agent:
         self.frame_arg["PSM"]['m-info'] += area_list
         # 清空旧的信息
         for i in range(len(self.frame_arg["PSM"]['m-info']) - 1, -1, -1):
-            if self.frame_arg["PSM"]['m-info'][i].info['T_stmp'] < tfi - self.agent_arg['a']['rmb']:
+            if self.frame_arg["PSM"]['m-info'][i].info['T_stmp'] < tfi - self.agent_arg['a']['m-info-rmb']:
                 del self.frame_arg["PSM"]['m-info'][i]
 
     def renew_m_info(self, area, tfi):
@@ -100,3 +110,12 @@ class Agent:
             if max_area.info['max'] <= area.info['max']:
                 max_area = area
         return max_area
+
+    def renew_m_plan_list(self, plan_list, tfi):
+        self.frame_arg['PSM']["m-plan"] += plan_list
+        for i in range(len(self.frame_arg['PSM']['m-plan']) - 1, -1, -1):
+            if self.frame_arg['PSM']['m-plan'][i].info['T_gen'] < tfi - self.agent_arg['a']['m-plan-rmb']:
+                del self.frame_arg['PSM']['m-plan'][i]
+
+    def renew_m_plan(self, plan, tfi):
+        self.renew_m_plan_list([plan], tfi)

@@ -114,6 +114,7 @@ class Area:
         self.center = center
         self.mask = mask
         self.dist = dist
+        self.sign = None
         self.info = {}
 
     def get_dist(self, state):
@@ -143,7 +144,7 @@ class Area:
         logging.info(
             "Area:(c:%s, mask:%s, d:%d):num %d" % (str(self.center), str(self.mask), self.dist, len(bfs_queue)))
         return [pair[0] for pair in bfs_queue]
-
+#TODO:  jiaru sign point
     def state_in(self, state):
         assert isinstance(state, State) and state.N == self.center.N
         diff = State.getDiffFrom(state, self.center)
@@ -194,6 +195,19 @@ class Area:
             if self.mask[i] != other.mask[i]:
                 return False
         return True
+
+    def __gt__(self, other):
+        assert isinstance(other, Area)
+        if self.dist != other.dist:
+            return self.dist > other.dist
+        i_center = (int(self.center), int(other.center))
+        if i_center[0] != i_center[1]:
+            return i_center[0] > i_center[1]
+        for i in range(State.N):
+            if self.mask[i] != other.mask[i]:
+                return self.mask[i] > other.mask[i]
+        return False
+
 
 class NKmodel:
     def __init__(self, n, k, p=2):
@@ -319,25 +333,23 @@ class Env:
         # moniter.DrawHist(all_peak_value, all_config['peak_hist'])  # 需要输出hist时调用
         return Env._getDistri(all_peak_value)
 
-    def nkmodel_save(self, filepath):
+    def nkmodel_save(self, filepath, model_type):
         save_data = {
             "N": self.N,
             "K": self.K,
             "P": self.P,
-            "T": self.T,
-            "model": self.models
+            "model": self.models[model_type]
         }
         with open(filepath, "wb") as fp:
             pickle.dump(save_data, fp)
 
-    def nkmodel_load(self, filepath):
+    def nkmodel_load(self, filepath, model_type):
         with open(filepath, "rb") as fp:
             data = pickle.load(fp)
-        self.N = data['N']
-        self.K = data['K']
-        self.P = data['P']
-        self.T = data['T']
-        self.models = data['model']
+        assert isinstance(self.N == data['N'])
+        assert isinstance(self.K == data['K'])
+        assert isinstance(self.P == data['P'])
+        self.models[model_type] = data['model']
 
 
 def get_area_sample_value(env, area, sample_num, state=None, dfs_r=0.5):

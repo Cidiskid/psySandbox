@@ -10,8 +10,10 @@ import meeting
 from util.config import all_config
 from util import moniter
 from record import Record
+from leadership_bill import LeaderBill, LeaderRecord, Sign
 from random import randint
 import metrics
+import leadership_bill
 
 class MulControl:
     def __init__(self):
@@ -20,9 +22,10 @@ class MulControl:
         env_arg = arg.init_env_arg(self.global_arg)
         # 增加nk的一个读入操作
         self.main_env = Env(env_arg)
-        if all_config['checkpoint']['env']['enable']:
-            self.main_env.nkmodel_load(all_config['checkpoint']['env']['path'])
-        self.main_env.nkmodel_save(all_config["nkmodel_path"])
+        for model_type in ['st', 'ed']:
+            if all_config['checkpoint']['env'][model_type]['enable']:
+                self.main_env.nkmodel_load(all_config['checkpoint']['env']['path'], model_type)
+            self.main_env.nkmodel_save(all_config["nkmodel_path"][model_type], model_type)
         # 个体初始化
         self.agents = []
         csv_head_agent = ['agent_no'] + ['st_state'] + ['st_value'] + ['insight'] + ['xplr'] + ['xplt'] + ['enable']
@@ -35,11 +38,13 @@ class MulControl:
                                                         self.main_env.arg),
                                      self.main_env))
             self.agents[i].state_now = deepcopy(state_start)
+            self.agents[i].agent_id = i
 
             # 去除了一开始给一个全局area，改为添加一个包含起点的点area
             start_area = Area(self.agents[i].state_now, [False] * self.main_env.N, 0)
             start_area.info = get_area_sample_distr(env=self.main_env, area=start_area, state=self.agents[i].state_now,
                                                     T_stmp=0, sample_num=1, dfs_r=1)
+            start_area.sign = Sign(i, 0, 'start')
             self.agents[i].renew_m_info(start_area, 0)
             self.a_plan = None
             logging.info("state:%s, st_value:%s,insight:%.5s ,xplr:%.5s, xplt:%.5s, enable:%.5s" % (
@@ -166,12 +171,13 @@ class MulControl:
                                 all_meet_info[m_name]['member'],
                                 all_meet_info[m_name]['host'],
                                 up_info)
+        self.metric.calc_metric(['frame'], Ti + Tfi,
+                                socl_net=self.socl_net,
+                                agents=self.agents,
+                                env=self.main_env)
         return new_meet_req
 
     def run_stage(self, Ti, meet_req, up_info):
-        self.metric.calc_metric(['stage'], Ti,
-                                agents=self.agents,
-                                env=self.main_env)
         # 将Agent上一个stage的最终状态拷贝过来
         for i in range(len(self.agents)):
             last_arg = deepcopy(self.agents[i].stage_arg)
@@ -247,6 +253,10 @@ class MulControl:
             self.socl_net.power_save(power_save_path)
             self.socl_net.relat_save(relat_save_path)
             #  P1-05 增加Socil Network的结果输出
+        self.metric.calc_metric(['stage'], Ti,
+                                socl_net=self.socl_net,
+                                agents=self.agents,
+                                env=self.main_env)
         return meet_req
 
     def run_exp(self):
@@ -291,9 +301,8 @@ class MulControl:
             # logging.debug("max_value:{max}".format(**up_info['nkinfo']))
             # 运行一个Stage，Ti表示每个Stage的第一帧
             meet_req = self.run_stage(Ti, meet_req, up_info)
-
-        import json
-        print(json.dumps(self.metric.get_data(), indent=2))
+        moniter.DumpToJson(self.metric.get_data(), all_config['metrics_json_path'])
+        moniter.DumpToJson(leadership_bill.leader_bill.to_json(), all_config['leadership_bill_json_path'])
 
 
 if __name__ == '__main__':
@@ -373,13 +382,19 @@ if __name__ == '__main__':
         # 添加一个act的记录文件
         all_config['act_csv_path'] = os.path.join("result", all_config['batch_id'], exp_id, "%s_act.csv" % (exp_id))
 
-        all_config['nkmodel_path'] = os.path.join("result", all_config['batch_id'], exp_id,
-                                                  "%s_nkmodel.pickle" % (exp_id))
+        all_config['nkmodel_path'] = {}
+        for model_type in ['st', 'ed']:
+            all_config['nkmodel_path'][model_type] = os.path.join("result", all_config['batch_id'], exp_id,
+                                                                  "%s_nkmodel_%s.pickle" % (exp_id, model_type))
         all_config['agent_csv_path'] = os.path.join("result", all_config['batch_id'], exp_id,
                                                     "%s_agent_attribute.csv" % (exp_id))
         all_config['peak_hist'] = os.path.join("result", all_config['batch_id'], exp_id, "%s_peak_hist.png" % (exp_id))
         all_config['total_hist'] = os.path.join("result", all_config['batch_id'], exp_id,
                                                 "%s_total_hist.png" % (exp_id))
+        all_config['metrics_json_path'] = os.path.join("result", all_config['batch_id'], exp_id,
+                                                       "%s_metrics.json" % exp_id)
+        all_config['leadership_bill_json_path'] = os.path.join("result", all_config['batch_id'], exp_id,
+                                                               "%s_leadership_bill.json" % exp_id)
 
         logging.info("run exp %3d" % exp_num)
         main_control = MulControl()
