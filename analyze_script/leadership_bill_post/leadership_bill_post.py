@@ -6,9 +6,9 @@ import json
 def get_file_path():
     n_agent = 16
     n, k, p = 5, 3, 7
-    t, ts = 64, 8
+    t, ts = 256, 8
     args_str = "NA{}_N{}_K{}_P{}_T{}_Ts{}".format(n_agent, n, k, p, t, ts)
-    exp_name = "20181223-010150"
+    exp_name = "20181230-105533"
     exp_id = "exp0"
     exp_dir = os.path.join("..", "..", "result",
                            "batch_{exp_name}_{args_str}",

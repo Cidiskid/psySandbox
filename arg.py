@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 import os
 from random import normalvariate as Norm
-from random import uniform, paretovariate
+from random import uniform, paretovariate, random
 from math import exp, pow, tanh, cos, pi
 from copy import deepcopy
 import logging
@@ -11,9 +11,9 @@ from env import Area
 
 def init_global_arg():
     arg = {
-        'T': 64,  # default7.4 256 模拟总时间
-        "Ts": 8,  # default7.4 8 每个stage的帧数
-        "Nagent": 16,  # default7.4 10 Agent数量
+        'T': 256,  # default1224 256 模拟总时间
+        "Ts": 8,  # default1224 8 每个stage的帧数
+        "Nagent": 16,  # default1224 16 Agent数量
         'D_env': True,  # 动态地形开关
         'mul_agent': True,  # 多人互动开关
         'repeat': 1  # 重复几次同样参数的实验
@@ -24,16 +24,16 @@ def init_global_arg():
 def init_env_arg(global_arg):
     # NK model
     arg = {
-        'N': 5,  # default7.4 5
-        'K': 3,  # default7.4 3
-        'P': 7,  # # default7.4 7 每个位点状态
+        'N': 5,  # default1224 5
+        'K': 3,  # default1224 3
+        'P': 7,  # # default1224 7 每个位点状态
         'T': global_arg['T'],  # 模拟总时间
         'Tp': global_arg['T'],  # 每个地形持续时间/地形变化耗时 by Cid
         'dynamic': global_arg['D_env'],  # 动态地形开关
-        'sigma': 0.095,  # default7.4 0.095
-        'mu': 0.5,  # default7.4 0.5
-        'value2ret': (lambda real_value: min(max(0.5 + 0.5 * (real_value - arg['mu']) / (3 * arg['sigma']), 0), 1))
-        # default7.4 99%截断，并将区间调整为[0，1]
+        'sigma': 0.095,  # default1224 0.095
+        'mu': 0.5,  # default1224 0.5
+        'value2ret': (lambda real_value: min(max(0.5 + 0.5 * (real_value - arg['mu']) / (4 * arg['sigma']), 0), 1))
+        # default1224 99%截断，并将区间调整为[0，1]
         # 'value2ret': (lambda real_value: real_value)  # 原始值
     }
 
@@ -114,9 +114,9 @@ def init_soclnet_arg(global_arg, env_arg):
     arg['Nagent'] = global_arg['Nagent']
     arg['power_thld'] = 0.7  # default7.4 0.7  表示可以被强化角色定义的最小影响力分数
     arg['relat_thld'] = 0.7  # default7.4 0.7
-    arg['relat_init'] = 0.5  # default7.4 0.5
+    arg['relat_init'] = 0.3  # default7.4 0.5
     arg['relat_turb'] = 0.15  # default7.4 0.15
-    arg['power_init'] = 0.25  # default7.4 0.5
+    arg['power_init'] = 0.3  # default7.4 0.5
     arg['power_turb'] = 0.15  # default7.4 0.15
 
     # 权重到距离的转化公式
@@ -131,19 +131,22 @@ def init_agent_arg(global_arg, env_arg):
     arg = {}
     # 个体属性差异
     arg['a'] = {
-        "insight": clip_rsmp(0.001, 9.999, paretovariate, alpha=1) / 10,  # 环境感知能力 base 模式
+        #"insight": clip_rsmp(0.001, 9.999, paretovariate, alpha=1) / 10,  # 环境感知能力 base 模式
         # "insight": clip_rsmp(0.50, 0.85, uniform, a=0.50, b=0.85), # expert模式
+        "insight": random(), # 随机模式
         "act": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.1),  # default7.4  Norm(0, 0.1),  # 行动意愿
-        "xplr": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.35),  # default7.4  Norm(0, 0.3),  # 探索倾向
+        #"xplr": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.35),  # default7.4  Norm(0, 0.3),  # 探索倾向
         #"xplr": clip_rsmp(-0.999, 0.999, Norm, mu=0.3, sigma=0.35),  # default7.4  Norm(0, 0.3),  # 高探索倾向
-        "xplt": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.35),  # default7.4  Norm(0, 0.3),  # 利用倾向
+        "xplr": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.6),  # default7.4  Norm(0, 0.3),  # 高探索异质性
+        #"xplt": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.35),  # default7.4  Norm(0, 0.3),  # 利用倾向
+        "xplt": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.6),  # default7.4  Norm(0, 0.3),  # 高利用异质性
         #"xplt": clip_rsmp(-0.999, 0.999, Norm, mu=0.3, sigma=0.35),  # default7.4  Norm(0, 0.3),  # 高利用倾向
-        "enable": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.35),  # default7.4  Norm(0, 0.1),
+        "enable": clip_rsmp(-0.999, 0.999, Norm, mu=0, sigma=0.1),  # default7.4  Norm(0, 0.1),
         #"enable": clip_rsmp(-0.999, 0.999, Norm, mu=0.3, sigma=0.35),  # 高enable模式
         # "enable": clip_rsmp(-0.999, 0.999, uniform, a=-0.8, b=-0.2),  # 对事不对人（不管团队无enable）模式
         # "se": clip_rsmp(0.001, 0.999, Norm, mu=arg['a']["insight"], sigma=0.1)
-        "m-info-rmb": 64,
-        "m-plan-rmb": 64,
+        "m-info-rmb": 32,   # default1224 64
+        "m-plan-rmb": 32,   # default1224 64
     }
 
     # 适应分数观察值的偏差
@@ -161,7 +164,7 @@ def init_agent_arg(global_arg, env_arg):
         "other": 0.5,  # default7.4 0.5 对他人给的计划变化幅度更大
         "self": 0.1  # default7.4 0.1 对自己的计划变化幅度较小（效能提升小）
     }
-    dP_s = 50  # default7.4 10 对变化的敏感度
+    dP_s = 50  # default7.4 10 对变化的敏感度,值越大，敏感度越高
     # arg["dPower"] = (lambda dF, dP_r: dP_r * tanh(dP_s * dF))
     arg["dPower"] = (lambda dF, dP_r: dP_r * rand_shrink(tanh(dP_s * dF), 0.5))  # default7.4
     arg["pwr_updt_g"] = lambda old_pwr, dP: \
@@ -244,7 +247,7 @@ def init_frame_arg(global_arg, env_arg, agent_arg, stage_arg, last_arg, Tp, PSMf
     xdzx_ob = 1  # ob = odds base default7.4 1
     hqxx_ob = 1 + agent_arg['a']['xplr']
     jhjc_ob = 1 + agent_arg['a']['xplt']
-    whlj_ob = 1 + agent_arg['a']['enable']
+    whlj_ob = 0.5 + agent_arg['a']['enable']
     dyjs_ob = 1 + agent_arg['a']['enable']
     tjzt_ob = 1 + agent_arg['a']['enable']
     xdzx_rp = 0.5  # 行动执行随pan变化的最大幅度,dplan一定>0 default7.4 0.5
