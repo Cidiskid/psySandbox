@@ -237,6 +237,8 @@ def act_commit(env, socl_net, agent_no, agent, record, T, Tfi, new_plan, member)
     if new_plan.info['owner'] != agent_no:
         p_comit = socl_net.power[new_plan.info['owner']][agent_no]['weight']
 
+    agent.renew_m_plan(new_plan, T + Tfi)
+
     if (p_comit > uniform(0, 1)):
         # P0-07 同上，覆盖计划前对原计划执行情况进行比较，并更新power
         if not agent.a_plan is None:
