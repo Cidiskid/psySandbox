@@ -11,9 +11,9 @@ from env import Area
 
 def init_global_arg():
     arg = {
-        'T': 256,  # default1224 256 模拟总时间
-        "Ts": 8,  # default1224 8 每个stage的帧数
-        "Nagent": 16,  # default1224 16 Agent数量
+        'T': 8,  # default1224 256 模拟总时间
+        "Ts": 2,  # default1224 8 每个stage的帧数
+        "Nagent": 4,  # default1224 16 Agent数量
         'D_env': True,  # 动态地形开关
         'mul_agent': True,  # 多人互动开关
         'repeat': 1  # 重复几次同样参数的实验

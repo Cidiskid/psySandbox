@@ -120,7 +120,7 @@ def agent_each_minfo(agents, env, **kargs):
 
     def sum_and_avg(key):
         res_sum = sum([m[key] for m in ret_result['each']])
-        return {'sum': res_sum, "avg": res_sum / len(agents)}
+        return {'sum': res_sum, "avg": res_sum * 1.0 / len(agents)}
 
     for key in ['all_area', 'unique_area', 'unique_m_info', 'useful_m_info']:
         ret_result['avg'][key] = sum_and_avg(key)
@@ -192,7 +192,7 @@ def agent_each_mplan(agents, env, **kargs):
 
     def sum_and_avg(key):
         res_sum = sum([m[key] for m in ret_result['each']])
-        return {'sum': res_sum, "avg": res_sum / len(agents)}
+        return {'sum': res_sum, "avg": res_sum *1.0 / len(agents)}
 
     for key in ['all_plan', 'unique_plan']:
         ret_result['avg'][key] = sum_and_avg(key)
@@ -277,7 +277,7 @@ if __name__ == '__main__':
 
 
     def nums_avgs(nums, **kargs):
-        return sum(nums) / len(nums)
+        return sum(nums) * 1.0 / len(nums)
 
 
     def nums_lens(nums, **kargs):

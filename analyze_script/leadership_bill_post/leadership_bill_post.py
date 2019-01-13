@@ -2,14 +2,16 @@ import csv
 import os
 import json
 
-
-def get_file_path():
-    n_agent = 16
+def get_args():
+    n_agent = 4
     n, k, p = 5, 3, 7
-    t, ts = 256, 8
-    args_str = "NA{}_N{}_K{}_P{}_T{}_Ts{}".format(n_agent, n, k, p, t, ts)
-    exp_name = "20181230-105533"
+    t, ts = 8, 2
+    exp_name = "20190104-014057"
     exp_id = "exp0"
+    return n_agent, n, k, p, t, ts, exp_name, exp_id
+
+def get_file_path(n_agent, n, k, p, t, ts, exp_name, exp_id):
+    args_str = "NA{}_N{}_K{}_P{}_T{}_Ts{}".format(n_agent, n, k, p, t, ts)
     exp_dir = os.path.join("..", "..", "result",
                            "batch_{exp_name}_{args_str}",
                            "mul_{exp_name}_{exp_id}").format(exp_name=exp_name,
@@ -228,5 +230,6 @@ def main(args):
 
 
 if __name__ == "__main__":
-    args = get_file_path()
+    n_agent, n, k, p, t, ts, exp_name, exp_id = get_args()
+    args = get_file_path(n_agent, n, k, p, t, ts,exp_name, exp_id)
     main(args)
