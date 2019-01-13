@@ -6,10 +6,10 @@ import metrics
 
 
 def init_params():
-    n_agent = 4
+    n_agent = 16
     n, k, p = 5, 3, 7
-    t, ts = 8, 2
-    exp_name = "20190104-014057"
+    t, ts = 256, 8
+    exp_name = "20190113-012910"
     exp_id = "exp0"
     return n_agent, n, k, p, t, ts, exp_name, exp_id
 
@@ -133,7 +133,11 @@ def save_table(save_path, table_json):
         def __get_by_keys(mm_json, keys):
             if len(keys) == 0:
                 return mm_json
-            return __get_by_keys(mm_json[keys[0]], keys[1:])
+            try:
+                mmm_json = mm_json[keys[0]]
+            except:
+                return None
+            return __get_by_keys(mmm_json, keys[1:])
 
         return __get_by_keys(m_json, list(keypath))
 
@@ -153,8 +157,6 @@ def save_table(save_path, table_json):
         keys_list.append(_get_all_keys(table_json[T]))
     merged_keys = _merge_and_sort_all_keys(keys_list)
     title = ["T"] + list(map(str, merged_keys))
-    print(save_path)
-    print(title)
     csv_result = []
     for T in time_list:
         the_row = {'T': T}
