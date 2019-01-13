@@ -213,7 +213,9 @@ def agent_common_mplan(agents, env, **kwargs):
                 if t_plan[i] == t_plan[i - 1]:
                     del t_plan[i]
             m_mplan_list += t_plan
+#        logging.debug("{}".format(m_mplan_list))
         m_mplan_list = sorted(m_mplan_list)
+#        logging.debug("{}".format(m_mplan_list))
         same_cnt = 0
         same_cnt_list = []
         for i in range(len(m_mplan_list)):
@@ -223,6 +225,7 @@ def agent_common_mplan(agents, env, **kwargs):
                 same_cnt_list.append(same_cnt)
                 same_cnt = 1
         same_cnt_list.append(same_cnt)
+#        logging.debug("{}".format(same_cnt_list))
         same_hist = [0] * (max(same_cnt_list) + 1)
         for x in same_cnt_list:
             same_hist[x] += 1

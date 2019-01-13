@@ -33,6 +33,9 @@ class State:
             return ''.join([str(_) for _ in self.data])
         return '_'.join([str(_) for _ in self.data])
 
+    def __repr__(self):
+        return str(self)
+
     def __getitem__(self, item):
         assert 0 <= item < self.N
         return self.data[item]
@@ -43,10 +46,7 @@ class State:
 
     def __eq__(self, other):
         assert isinstance(other, State)
-        for i in range(State.N):
-            if self.data[i] != other.data[i]:
-                return False
-        return True
+        return str(self) == str(other)
 
     def walk(self, key, d):
         assert 0 <= key < self.N
@@ -116,6 +116,9 @@ class Area:
         self.dist = dist
         self.sign = None
         self.info = {}
+
+    def __repr__(self):
+        return "<Cen:{},mask:{},d:{}>".format(self.center, self.mask, self.dist)
 
     def get_dist(self, state):
         return State.getDist(state, self.center)
@@ -189,7 +192,7 @@ class Area:
         assert isinstance(other, Area)
         if self.dist != other.dist:
             return False
-        if self.center != other.center:
+        if not self.center == other.center:
             return False
         for i in range(State.N):
             if self.mask[i] != other.mask[i]:
@@ -201,7 +204,7 @@ class Area:
         if self.dist != other.dist:
             return self.dist > other.dist
         i_center = (int(self.center), int(other.center))
-        if i_center[0] != i_center[1]:
+        if not i_center[0] == i_center[1]:
             return i_center[0] > i_center[1]
         for i in range(State.N):
             if self.mask[i] != other.mask[i]:

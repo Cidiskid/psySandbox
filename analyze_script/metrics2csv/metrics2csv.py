@@ -2,14 +2,13 @@ import csv
 import os
 import sys
 import json
-import metrics
 
 
 def init_params():
     n_agent = 16
     n, k, p = 5, 3, 7
-    t, ts = 256, 8
-    exp_name = "20190113-012910"
+    t, ts = 64, 8
+    exp_name = "20190114-041104"
     exp_id = "exp0"
     return n_agent, n, k, p, t, ts, exp_name, exp_id
 
