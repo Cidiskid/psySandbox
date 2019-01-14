@@ -49,6 +49,9 @@ class Plan:
             return State.getDist(state, self.area.center) \
                    + State.getDist(self.area.center, self.goal)
 
+    def __repr__(self):
+        return "<goal:{}, area:{}>".format(self.goal, self.area)
+
     def __eq__(self, other):
         assert isinstance(other, Plan)
         return self.area == other.area
@@ -77,11 +80,9 @@ class Agent:
         #                                        sample_num=env.arg['ACT']['hqxx']['sample_n'],
         #                                        T_stmp=0)
 
-
         # for k in start_area.info:
         #    start_area.info[k] = self.agent_arg['ob'](start_area.info[k])
-        #self.frame_arg['PSM']['m-info'].append(start_area)
-
+        # self.frame_arg['PSM']['m-info'].append(start_area)
 
     def ob(self, env, state):
         assert isinstance(env, Env) and isinstance(state, State)
